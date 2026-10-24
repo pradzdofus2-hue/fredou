@@ -1,3 +1,4 @@
+import { DOFUS_IMAGES } from './dofus-image-map';
 /** Catalogue de fan-projet. Noms Dofus non affiliés à Ankama ; illustrations temporaires originales. */
 import type { Card, Rarity, Series } from '../lib/contracts';
 import { GAME_CONFIG } from './config';
@@ -108,6 +109,6 @@ export const CARDS: Card[] = SERIES.flatMap((series, seriesIndex) => NAMES[serie
   return { id: `card-${number}`, number, name, rarity, seriesId: series.id,
     description: `${name} rejoint l'album « ${series.name} ». Carte de collection non officielle du Monde des Douze.`,
     // Visuels fictifs actuels conservés jusqu'à la sélection d'illustrations autorisées.
-    image: `/art/card-${number}.svg`, recycleValue: GAME_CONFIG.rarities[rarity].recycleValue,
+    image: DOFUS_IMAGES[`card-${number}`] ?? `/art/card-${number}.svg`, recycleValue: GAME_CONFIG.rarities[rarity].recycleValue,
     collectionPoints: GAME_CONFIG.rarities[rarity].collectionPoints };
 }));
