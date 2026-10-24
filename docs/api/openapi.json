@@ -1,0 +1,2263 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FREDOU COLLECTION API",
+    "version": "1.0.0",
+    "description": "Contrat local v1. DTO camelCase, dates UTC ISO 8601, montants entiers en Éclats. Conçu et relu avant implémentation ; référencé dans docs/plans/IMPLEMENTATION.md. Catalogue de démonstration : 72 cartes originales / 3 séries. Les mutations sont atomiques. Toute modification de contrat précède son implémentation."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Serveur local Windows"
+    }
+  ],
+  "tags": [
+    {
+      "name": "State"
+    },
+    {
+      "name": "Actions"
+    },
+    {
+      "name": "Authentication"
+    }
+  ],
+  "paths": {
+    "/api/state": {
+      "get": {
+        "tags": [
+          "State"
+        ],
+        "operationId": "getState",
+        "summary": "État public et données privées de la session courante",
+        "security": [
+          {},
+          {
+            "session": []
+          }
+        ],
+        "description": "Réponse Cache-Control: no-store. Sans session, currentUser=null et inventory/openings/ledger/trades/acquisitions vides. Les succès sont les définitions sans progression privée. users contient uniquement les profils publics, sans solde ni secrets ; aucune session ni identité Discord privée. Historique récent décroissant : openings et ledger 200, acquisitions 500, activités 100 ; annonces actives et historique personnel 500, échanges personnels 200, prix 500, actualités/événements/succès 100. Catalogue borné à 10000 cartes pour cette installation locale. Les profils publics et classements utilisent tous les utilisateurs ; cette lecture complète requiert une pagination serveur avant une montée en charge importante. Le client filtre et pagine le snapshot (Top 10/100) ; la limite est documentée, sans prétendre fournir un historique infini. Les métriques des classements sont calculées sur la base réelle. completion est un pourcentage 0..100. Le GET ne modifie pas la base : disponibilités de recharge calculées, matérialisées uniquement lors des mutations.",
+        "responses": {
+          "200": {
+            "description": "Snapshot courant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur interne ; aucune écriture partielle.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/actions": {
+      "post": {
+        "tags": [
+          "Actions"
+        ],
+        "operationId": "performAction",
+        "summary": "Exécuter une mutation transactionnelle idempotente",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "UUID généré pour une intention utilisateur et conservé pour ses retries. Les opérations métier sont indexées par utilisateur + UUID, avec hash du corps canonique et résultat enregistrés dans la même transaction. Corps différent => 409. Les actions login-dev/logout/account-delete utilisent un registre distinct global indexé par SHA-256(UUID), sans identité personnelle en clair dans le reçu de suppression ; TTL 24 heures. Les cookies de rejeu sont chiffrés AES-256-GCM avec data/session.key, secret local non versionné. Une session révoquée ne peut pas être réactivée par un replay de connexion (409). Ne pas réutiliser une clé entre comptes ni la publier."
+          },
+          {
+            "in": "header",
+            "name": "Origin",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Origine exacte du serveur de confiance, configurée via APP_URL. Rejeter les origines absentes ou différentes sur POST. Aucun CORS permissif. En mode développement limité à une origine loopback, localhost, 127.0.0.1 et [::1] sont des alias autorisés avec protocole et port identiques ; Host doit aussi appartenir à cet ensemble. Sec-Fetch-Site: cross-site est refusé."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Action"
+              }
+            }
+          }
+        },
+        "description": "Corps limité à 16 KiB, champs inconnus refusés, nombres entiers stricts. Toutes les actions sauf login-dev nécessitent une session. login-dev uniquement en mode développement local (LOCAL_DEV_MODE=true, ou variable absente et DISCORD_CLIENT_ID absent ; APP_URL doit être loopback, interface marquée démonstration) et compte fictif autorisé ; ne simule pas Discord. Sessions HttpOnly, SameSite=Lax, Secure en HTTPS. Limitation par session/client (60 mutations/minute) ; tous les appels, y compris les retries, comptent dans la limitation ; les retries idempotents ne réexécutent aucun effet. open exige disponibilité, éventuel événement actif, 5 tirages serveur cryptographiques et pondérations validées, garantie/pitié appliquées ; consommation, inventaire, récompense, succès et historique atomiques. buy-booster quantity 1..20 réserve achat serveur et vérifie les fonds. recycle sans cardId recycle tous les doublons ; toujours conserver un exemplaire, hors cartes séquestrées. favorite inverse le favori pour une carte possédée. listing-create séquestre quantity 1..50 ; price est le prix UNITAIRE, total=price*quantity ; listing-buy achète le lot entier, interdit auto-achat, vérifie annonce encore active et débite/crédite atomiquement. Annulation réservée au vendeur, restitution unique. trade-create interdit soi-même, doublons de cardId dans un côté, un même cardId dans les deux côtés ; 1..20 lignes par côté, 1..50 unités ; limites config et rapport de valeur contrôlés serveur. Proposition sans transfert, acceptation réservée au destinataire et revalide toutes les propriétés/quantités au moment de transaction ; reject destinataire, cancel auteur. preferences met à jour la préférence. event-save admin uniquement ; un nouvel événement est informatif, le booster événementiel existant est lié à Convergence et ne peut pas être lié à un autre événement via cette API, dates startsAt < endsAt, récompense 0..1000 ; pas de versement automatique arbitraire. account-delete exige confirmation exactement égale au pseudo, invalide sessions, annule/restaure les réservations et anonymise les contreparties des registres économiques nécessaires. referral nécessite code existant, autre compte, absence de parrain précédent ; récompense unique au seuil config, aucun auto-parrainage. Toute erreur annule la transaction entière.",
+        "responses": {
+          "200": {
+            "description": "Action appliquée ou replay exact, snapshot après action et résultat ; open fournit result.opening.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON invalide, clé absente ou validation syntaxique.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Session requise ou expirée.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origine interdite, permission insuffisante ou mode développement désactivé.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Entité inexistante ou non accessible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflit concurrent, quantité/solde indisponible, requête rejouée avec un corps différent ou état incompatible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Corps de requête supérieur à 16 Kio, mesuré pendant la lecture du flux.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Règle métier invalide, dates inversées, auto-échange, code de parrainage ou confirmation invalide.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Trop de requêtes. Respecter Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Délai conservateur avant nouvelle tentative, en secondes.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "example": 60
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur interne ; aucune écriture partielle.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/discord": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "startDiscordOAuth",
+        "summary": "Initier une véritable connexion Discord OAuth2",
+        "security": [],
+        "description": "Si les secrets serveur sont absents, renvoie 503 OAUTH_UNAVAILABLE. Sinon génère state cryptographique à durée limitée stocké en cookie HttpOnly, et redirige vers Discord avec scope identify et redirect_uri configurée. Aucun secret dans le client.",
+        "responses": {
+          "302": {
+            "description": "Redirection vers Discord",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur interne ; aucune écriture partielle.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Discord non configuré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/discord/callback": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "completeDiscordOAuth",
+        "summary": "Valider le retour OAuth et créer la session",
+        "security": [],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "description": "Valider state constant-time, durée et usage unique avant échange du code côté serveur. code et state requis si error absent. Ne jamais journaliser tokens/secrets. Le profil est issu de Discord réel ; création/mise à jour utilisateur et rotation de session. Un refus utilisateur est géré par erreur contrôlée ou redirection informative.",
+        "responses": {
+          "302": {
+            "description": "Session créée, redirection locale",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON invalide, clé absente ou validation syntaxique.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origine interdite, permission insuffisante ou mode développement désactivé.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur interne ; aucune écriture partielle.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Discord indisponible ou non configuré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "fredou_session",
+        "description": "Jeton opaque aléatoire ; hash conservé côté serveur, expiration et révocation."
+      }
+    },
+    "schemas": {
+      "Series": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "color"
+        ]
+      },
+      "Card": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "rarity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "seriesId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 3000
+          },
+          "image": {
+            "type": "string",
+            "pattern": "^/art/card-[1-9][0-9]*\\.svg$"
+          },
+          "recycleValue": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "collectionPoints": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "name",
+          "rarity",
+          "seriesId",
+          "description",
+          "image",
+          "recycleValue",
+          "collectionPoints"
+        ]
+      },
+      "PublicUser": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "uniqueCards": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "collectionPoints": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "mythicCards": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "completedAlbums": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "achievementCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "completion": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "avatar",
+          "joinedAt",
+          "uniqueCards",
+          "collectionPoints",
+          "mythicCards",
+          "completedAlbums",
+          "achievementCount",
+          "completion"
+        ]
+      },
+      "CurrentUser": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "uniqueCards": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "collectionPoints": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "mythicCards": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "completedAlbums": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "achievementCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "completion": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "balance": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "player",
+              "admin"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "development",
+              "discord"
+            ]
+          },
+          "preferences": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "reducedMotion": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "reducedMotion"
+            ]
+          },
+          "referralCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "referredBy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "avatar",
+          "joinedAt",
+          "uniqueCards",
+          "collectionPoints",
+          "mythicCards",
+          "completedAlbums",
+          "achievementCount",
+          "completion",
+          "balance",
+          "role",
+          "mode",
+          "preferences",
+          "referralCode",
+          "referredBy"
+        ]
+      },
+      "InventoryItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "cardId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "favorite": {
+            "type": "boolean"
+          },
+          "firstObtainedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastObtainedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "cardId",
+          "quantity",
+          "favorite",
+          "firstObtainedAt",
+          "lastObtainedAt"
+        ]
+      },
+      "Booster": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 3000
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "free",
+              "daily",
+              "premium",
+              "special",
+              "event"
+            ]
+          },
+          "price": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "guarantee": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "weights": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 0
+            },
+            "maxItems": 6,
+            "minItems": 6
+          },
+          "pityLimit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "cooldownSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "eventId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seriesId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "available": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "nextAvailableAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pityCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "kind",
+          "price",
+          "color",
+          "guarantee",
+          "weights",
+          "pityLimit",
+          "cooldownSeconds",
+          "eventId",
+          "seriesId",
+          "available",
+          "nextAvailableAt",
+          "pityCount",
+          "active"
+        ]
+      },
+      "DrawnCard": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "cardId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "isNew": {
+            "type": "boolean"
+          },
+          "quantityBefore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "cardId",
+          "isNew",
+          "quantityBefore"
+        ]
+      },
+      "Opening": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "boosterId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DrawnCard"
+            },
+            "maxItems": 5,
+            "minItems": 5
+          },
+          "shardsReward": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "pityTriggered": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "boosterId",
+          "createdAt",
+          "cards",
+          "shardsReward",
+          "pityTriggered"
+        ]
+      },
+      "LedgerEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "balanceAfter": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "referenceId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "amount",
+          "balanceAfter",
+          "reason",
+          "createdAt",
+          "referenceId"
+        ]
+      },
+      "Listing": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "sellerId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "cardId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "price": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "sold",
+              "cancelled"
+            ]
+          },
+          "buyerId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "sellerId",
+          "cardId",
+          "quantity",
+          "price",
+          "status",
+          "buyerId",
+          "createdAt",
+          "completedAt"
+        ]
+      },
+      "PricePoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "cardId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "unitPrice": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "soldAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "cardId",
+          "unitPrice",
+          "quantity",
+          "soldAt"
+        ]
+      },
+      "TradeItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "cardId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "cardId",
+          "quantity"
+        ]
+      },
+      "Trade": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "senderId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "recipientId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "offered": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TradeItem"
+            },
+            "maxItems": 20
+          },
+          "requested": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TradeItem"
+            },
+            "maxItems": 20
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "rejected",
+              "cancelled"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "senderId",
+          "recipientId",
+          "offered",
+          "requested",
+          "status",
+          "createdAt",
+          "resolvedAt"
+        ]
+      },
+      "Achievement": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "icon": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "target": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "progress": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "reward": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "unlockedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "icon",
+          "target",
+          "progress",
+          "reward",
+          "unlockedAt"
+        ]
+      },
+      "GameEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "reward": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "startsAt",
+          "endsAt",
+          "active",
+          "color",
+          "reward"
+        ]
+      },
+      "NewsItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "update",
+              "event",
+              "news"
+            ]
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "body",
+          "kind",
+          "publishedAt"
+        ]
+      },
+      "RankingEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "rank": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "value": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "userId",
+          "rank",
+          "value"
+        ]
+      },
+      "Rankings": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "uniqueCards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankingEntry"
+            }
+          },
+          "collectionPoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankingEntry"
+            }
+          },
+          "mythicCards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankingEntry"
+            }
+          },
+          "completedAlbums": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankingEntry"
+            }
+          },
+          "achievementCount": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankingEntry"
+            }
+          },
+          "completion": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankingEntry"
+            }
+          }
+        },
+        "required": [
+          "uniqueCards",
+          "collectionPoints",
+          "mythicCards",
+          "completedAlbums",
+          "achievementCount",
+          "completion"
+        ]
+      },
+      "Acquisition": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "cardId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "referenceId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "cardId",
+          "quantity",
+          "source",
+          "createdAt",
+          "referenceId"
+        ]
+      },
+      "Activity": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "kind",
+          "message",
+          "createdAt"
+        ]
+      },
+      "GameConfig": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "rarities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 5
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50
+                },
+                "color": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50
+                },
+                "recycleValue": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "collectionPoints": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "color",
+                "recycleValue",
+                "collectionPoints"
+              ]
+            },
+            "maxItems": 6,
+            "minItems": 6
+          },
+          "cardsPerBooster": {
+            "type": "integer",
+            "const": 5
+          },
+          "maxTradeItems": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          },
+          "maxTradeQuantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "maxTradeValueRatio": {
+            "type": "number",
+            "minimum": 1
+          },
+          "referralReward": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "referralRequiredOpenings": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "rarities",
+          "cardsPerBooster",
+          "maxTradeItems",
+          "maxTradeQuantity",
+          "maxTradeValueRatio",
+          "referralReward",
+          "referralRequiredOpenings"
+        ]
+      },
+      "StateResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "1"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "development",
+              "discord"
+            ]
+          },
+          "discordConfigured": {
+            "type": "boolean"
+          },
+          "currentUser": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CurrentUser"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicUser"
+            }
+          },
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Card"
+            },
+            "maxItems": 10000
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Series"
+            },
+            "maxItems": 500
+          },
+          "inventory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryItem"
+            },
+            "maxItems": 10000
+          },
+          "boosters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Booster"
+            },
+            "maxItems": 100
+          },
+          "openings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Opening"
+            },
+            "maxItems": 200
+          },
+          "ledger": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LedgerEntry"
+            },
+            "maxItems": 200
+          },
+          "listings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Listing"
+            },
+            "maxItems": 500
+          },
+          "trades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Trade"
+            },
+            "maxItems": 200
+          },
+          "achievements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Achievement"
+            },
+            "maxItems": 100
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameEvent"
+            },
+            "maxItems": 100
+          },
+          "news": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NewsItem"
+            },
+            "maxItems": 100
+          },
+          "rankings": {
+            "$ref": "#/components/schemas/Rankings"
+          },
+          "priceHistory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PricePoint"
+            },
+            "maxItems": 500
+          },
+          "acquisitions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Acquisition"
+            },
+            "maxItems": 500
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Activity"
+            },
+            "maxItems": 100
+          },
+          "config": {
+            "$ref": "#/components/schemas/GameConfig"
+          }
+        },
+        "required": [
+          "version",
+          "serverTime",
+          "mode",
+          "discordConfigured",
+          "currentUser",
+          "users",
+          "cards",
+          "series",
+          "inventory",
+          "boosters",
+          "openings",
+          "ledger",
+          "listings",
+          "trades",
+          "achievements",
+          "events",
+          "news",
+          "rankings",
+          "priceHistory",
+          "acquisitions",
+          "activities",
+          "config"
+        ]
+      },
+      "LoginDevAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "login-dev"
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "type",
+          "userId"
+        ]
+      },
+      "LogoutAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "logout"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "OpenAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "open"
+          },
+          "boosterId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "type",
+          "boosterId"
+        ]
+      },
+      "BuyBoosterAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "buy-booster"
+          },
+          "boosterId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "required": [
+          "type",
+          "boosterId",
+          "quantity"
+        ]
+      },
+      "RecycleAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "recycle"
+          },
+          "cardId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "FavoriteAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "favorite"
+          },
+          "cardId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "type",
+          "cardId"
+        ]
+      },
+      "ListingCreateAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "listing-create"
+          },
+          "cardId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "price": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        },
+        "required": [
+          "type",
+          "cardId",
+          "quantity",
+          "price"
+        ]
+      },
+      "ListingBuyAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "listing-buy"
+          },
+          "listingId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "type",
+          "listingId"
+        ]
+      },
+      "ListingCancelAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "listing-cancel"
+          },
+          "listingId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "type",
+          "listingId"
+        ]
+      },
+      "TradeCreateAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "trade-create"
+          },
+          "recipientId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "offered": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TradeItem"
+            },
+            "maxItems": 20,
+            "minItems": 1
+          },
+          "requested": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TradeItem"
+            },
+            "maxItems": 20,
+            "minItems": 1
+          }
+        },
+        "required": [
+          "type",
+          "recipientId",
+          "offered",
+          "requested"
+        ]
+      },
+      "TradeRespondAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "trade-respond"
+          },
+          "tradeId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "reject",
+              "cancel"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "tradeId",
+          "decision"
+        ]
+      },
+      "PreferencesAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "preferences"
+          },
+          "reducedMotion": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "type",
+          "reducedMotion"
+        ]
+      },
+      "EventSaveAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "event-save"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 2000
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "reward": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description",
+          "startsAt",
+          "endsAt",
+          "active",
+          "color",
+          "reward"
+        ]
+      },
+      "AccountDeleteAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "account-delete"
+          },
+          "confirmation": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "type",
+          "confirmation"
+        ]
+      },
+      "ReferralAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "referral"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "type",
+          "code"
+        ]
+      },
+      "Action": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LoginDevAction"
+          },
+          {
+            "$ref": "#/components/schemas/LogoutAction"
+          },
+          {
+            "$ref": "#/components/schemas/OpenAction"
+          },
+          {
+            "$ref": "#/components/schemas/BuyBoosterAction"
+          },
+          {
+            "$ref": "#/components/schemas/RecycleAction"
+          },
+          {
+            "$ref": "#/components/schemas/FavoriteAction"
+          },
+          {
+            "$ref": "#/components/schemas/ListingCreateAction"
+          },
+          {
+            "$ref": "#/components/schemas/ListingBuyAction"
+          },
+          {
+            "$ref": "#/components/schemas/ListingCancelAction"
+          },
+          {
+            "$ref": "#/components/schemas/TradeCreateAction"
+          },
+          {
+            "$ref": "#/components/schemas/TradeRespondAction"
+          },
+          {
+            "$ref": "#/components/schemas/PreferencesAction"
+          },
+          {
+            "$ref": "#/components/schemas/EventSaveAction"
+          },
+          {
+            "$ref": "#/components/schemas/AccountDeleteAction"
+          },
+          {
+            "$ref": "#/components/schemas/ReferralAction"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "login-dev": "#/components/schemas/LoginDevAction",
+            "logout": "#/components/schemas/LogoutAction",
+            "open": "#/components/schemas/OpenAction",
+            "buy-booster": "#/components/schemas/BuyBoosterAction",
+            "recycle": "#/components/schemas/RecycleAction",
+            "favorite": "#/components/schemas/FavoriteAction",
+            "listing-create": "#/components/schemas/ListingCreateAction",
+            "listing-buy": "#/components/schemas/ListingBuyAction",
+            "listing-cancel": "#/components/schemas/ListingCancelAction",
+            "trade-create": "#/components/schemas/TradeCreateAction",
+            "trade-respond": "#/components/schemas/TradeRespondAction",
+            "preferences": "#/components/schemas/PreferencesAction",
+            "event-save": "#/components/schemas/EventSaveAction",
+            "account-delete": "#/components/schemas/AccountDeleteAction",
+            "referral": "#/components/schemas/ReferralAction"
+          }
+        }
+      },
+      "ActionResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "login-dev",
+              "logout",
+              "open",
+              "buy-booster",
+              "recycle",
+              "favorite",
+              "listing-create",
+              "listing-buy",
+              "listing-cancel",
+              "trade-create",
+              "trade-respond",
+              "preferences",
+              "event-save",
+              "account-delete",
+              "referral"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "opening": {
+            "$ref": "#/components/schemas/Opening"
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "entityId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "type",
+          "message"
+        ]
+      },
+      "ActionResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/StateResponse"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ActionResult"
+          }
+        },
+        "required": [
+          "state",
+          "result"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR",
+                  "AUTH_REQUIRED",
+                  "FORBIDDEN",
+                  "NOT_FOUND",
+                  "CONFLICT",
+                  "INSUFFICIENT_FUNDS",
+                  "UNAVAILABLE",
+                  "IDEMPOTENCY_CONFLICT",
+                  "RATE_LIMITED",
+                  "OAUTH_UNAVAILABLE",
+                  "INTERNAL_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "maxItems": 100
+                }
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      }
+    }
+  }
+}

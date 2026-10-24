@@ -1,0 +1,159 @@
+/* Shared page geometry and controls, independently authored from the visual audit. */
+body{background:#0e0d12}body:before{display:none}
+.fc-shell{--amber:#ff4d2e;--amber-bright:#ff765b;--green:#3fbf7f;--radius:18px;--muted:#aaa4b0}
+.fc-shell h1,.fc-shell h2,.fc-shell h3{letter-spacing:-.035em}
+.fc-shell h1{font-weight:900}.fc-shell h2{font-size:32px;line-height:1.2}.fc-shell h3{font-size:18px}
+.fc-shell .page-intro{align-items:flex-end;margin-bottom:26px;gap:24px}
+.fc-shell .page-intro h1{font-size:64px;line-height:1.1;font-weight:900;margin:12px 0 18px;letter-spacing:-.045em}
+.fc-shell .page-intro p{font-size:18px;color:#b6afbd;max-width:1000px;line-height:1.65}
+.fc-shell .page-intro p:empty{display:none}
+.fc-shell .eyebrow{font:700 12px/1.5 var(--fc-mono);letter-spacing:1.5px;color:#ff4d2e}
+.fc-shell .eyebrow>span{display:none}
+.fc-shell .button{border-radius:999px;min-height:44px;padding:12px 22px;font:700 14px/1.35 var(--fc-body);transition:transform 150ms,background-color 150ms,border-color 150ms,opacity 150ms}
+.fc-shell .button.primary{background:#ff4d2e;border:1px solid #ff4d2e;color:#09080b;box-shadow:none;font-family:var(--fc-heading);font-size:13px}
+.fc-shell .button.primary:hover:not(:disabled){background:#ff684b;border-color:#ff684b;box-shadow:0 6px 22px #ff4d2e25;transform:translateY(-2px)}
+.fc-shell .button.secondary{background:#111015;border:1px solid #302d38;color:#edeae4}
+.fc-shell .button.secondary:hover:not(:disabled){border-color:#67616f;background:#1a1820}
+.fc-shell .button.small{min-height:36px;font-size:12px;padding:8px 15px}
+.fc-shell .icon-button{width:44px;height:44px;border-radius:50%;border:1px solid #302d38;background:#15141a}
+.fc-shell input,.fc-shell select,.fc-shell textarea{font-size:14px;background:#18161e;border:1px solid #302d38;border-radius:10px;min-height:44px;color:#edeae4;padding:10px 14px}
+.fc-shell input:focus,.fc-shell select:focus,.fc-shell textarea:focus{border-color:#ff4d2e;box-shadow:0 0 0 2px #ff4d2e16}
+.fc-shell input::placeholder,.fc-shell textarea::placeholder{color:#8c8596}
+.fc-shell .search-field{height:44px;min-height:44px;border:1px solid #302d38;border-radius:10px;background:#18161e;gap:14px;padding:0 15px;max-width:100%;width:420px}
+.fc-shell .search-field input{padding:0;min-height:0;height:100%;border:0;box-shadow:none;background:transparent}
+.fc-shell .search-field svg{color:#8f8999;width:16px}
+.fc-shell .shards{color:#4dd6ff}.fc-shell .button.primary .shards{color:#111015}
+.fc-shell .text-button{font:700 14px var(--fc-body);color:#edeae4}
+.fc-shell .text-button:hover{color:#ff4d2e}
+.fc-shell .soft-badge{background:#15141a;border-color:#302d38;color:#bcb6c6;border-radius:999px;font-size:13px}
+.fc-shell .progress{background:#201d27;height:8px;border-radius:99px}.fc-shell .progress>span{background:linear-gradient(90deg,#ff4d2e,#f5c518)}
+.fc-shell .progress-label{font-size:12px}.fc-shell .panel{background:#121117;border:1px solid #292630;border-radius:18px;padding:28px;box-shadow:none}
+.fc-shell .panel h2{margin-bottom:18px}.fc-shell .section-block{margin-top:48px}
+.fc-shell .section-heading{margin-bottom:24px}.fc-shell .section-heading>a{font-size:14px;color:#aaa4b0}
+.fc-shell .tabs{border-bottom:1px solid #2b2732;gap:6px;margin-bottom:24px;padding:0;border-radius:0;background:none}
+.fc-shell .tabs>button{border-radius:0;padding:15px 16px;color:#b6afbd;font-size:14px;font-weight:700;border:0;border-bottom:2px solid transparent;background:none;white-space:nowrap}
+.fc-shell .tabs>button.active{color:#fff;border-bottom-color:#ff4d2e;background:none}
+.fc-shell .tabs>button:hover{color:#fff;background:#ffffff04}
+.fc-shell .filter-panel{background:none;padding:0;border:0;gap:12px;margin-bottom:18px;border-radius:0}
+.fc-shell .results-heading{margin:18px 0;font:400 13px var(--fc-mono);color:#938b9d}
+.fc-shell .empty-state{min-height:230px;border:0;border-radius:0;background:none;color:#9991a4;padding:55px 20px}
+.fc-shell .empty-state>svg{color:#5a5662}.fc-shell .empty-state h3{font:400 15px var(--fc-body)}
+.fc-shell .empty-state p{font-size:14px}
+.fc-shell .pagination{margin-top:32px}.fc-shell .pagination button{border-color:#302d38;border-radius:9px;min-width:42px;min-height:42px;color:#edeae4;background:#15141a}
+.fc-shell .pagination button.active{background:#edeae4;color:#121117}
+.fc-shell .tag{font-family:var(--fc-mono);font-size:10px;border-radius:6px;background:#ffffff05;color:#b7afc2}
+.fc-shell .history-row{font-size:14px;min-height:52px;border-color:#292630}.fc-shell .history-row time{font-family:var(--fc-mono);font-size:11px;color:#8e879a}
+.fc-shell .footnote{font-size:12px;color:#888092}
+.fc-shell .modal-backdrop{background:#050407d9;backdrop-filter:blur(5px);padding:24px;z-index:200}
+.fc-shell .modal{background:#15141a;border:1px solid #35303d;border-radius:20px;padding:28px;box-shadow:0 24px 100px #0009;width:520px;max-width:100%}
+.fc-shell .modal.modal-wide{width:850px}.fc-shell .modal-heading{border-color:#2d2835;margin-bottom:22px}
+.fc-shell .modal-heading h2{font-size:23px;line-height:1.3}.fc-shell .modal p{font-size:15px;color:#b9b2c2;margin-bottom:20px}
+.fc-shell .field-label{font-size:13px;color:#b8b1c2;gap:9px}.fc-shell .confirm-total{background:#100f14;border-color:#302d38;border-radius:10px;font-size:16px}
+.fc-shell .toast{background:#211b23;border-color:#64412f;border-radius:12px;color:#f2eee8;font-size:14px;z-index:350}
+.fc-shell .initial-loading{background:#0e0d12}
+
+/* Fixed-price market: cards at left and the local activity counter at right. */
+.fc-market-layout{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:28px;align-items:start}
+.fc-market-main{min-width:0}.fc-market-main .tabs{margin-bottom:24px}
+.fc-market-filters{display:grid;gap:12px}.fc-market-selects{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.fc-market-selects label{display:flex;gap:8px;align-items:center;font-size:13px;color:#aaa4b0;min-width:0}
+.fc-market-selects select{width:auto;max-width:220px;font-weight:700;padding-right:28px}
+.fc-market-selects label:first-child select{width:200px}.fc-market-selects label:last-child{flex:1}
+.fc-market-selects input{width:74px;padding:10px;font-family:var(--fc-mono);font-size:12px}
+.fc-shell .fc-filter-toggle{display:none}
+.fc-shell .market-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.fc-shell .listing-card{background:#15141a;border:1px solid #292630;border-radius:18px;padding:10px;overflow:visible;box-shadow:none}
+.fc-market-card{width:100%;min-width:0}.fc-market-card .fc-card{width:100%}
+.fc-shell .listing-body{padding:10px 2px 3px}.fc-sale-kind{display:flex;justify-content:space-between;gap:6px;align-items:center;font-size:11px}
+.fc-sale-kind>span{border:1px solid #393140;border-radius:999px;padding:1px 7px}.fc-sale-kind>small{font:400 11px var(--fc-mono);color:#ff6948}
+.fc-shell .listing-seller{font-size:12px;margin-top:10px;color:#9d95aa}.fc-shell .listing-price{margin-top:8px;margin-bottom:12px;align-items:baseline}
+.fc-shell .listing-price .shards{font:700 24px var(--fc-heading);color:#edeae4}.fc-shell .listing-price .shards svg{color:#4dd6ff}
+.fc-shell .listing-price small{font-size:10px;color:#898195}.fc-shell .listing-body>.button{font-size:12px;padding:9px 8px;white-space:normal;min-height:40px}
+.fc-market-activity{border:1px solid #2d2732;border-radius:18px;background:linear-gradient(150deg,#251a1e,#15141b 260px);overflow:hidden;position:sticky;top:93px;padding-bottom:20px}
+.fc-market-activity>header{display:flex;gap:12px;padding:16px;border-bottom:1px solid #302832;align-items:center}
+.fc-market-activity>header>svg{width:38px;height:38px;padding:8px;border:1px solid #853a2b;border-radius:13px;color:#ff4d2e;background:#ff4d2e08}
+.fc-market-activity h2{font-size:17px;line-height:1.2}.fc-market-activity header span{font:400 10px var(--fc-mono);color:#aaa0af;letter-spacing:1px}
+.fc-market-wallet{padding:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-bottom:1px solid #302832;font-size:13px}
+.fc-market-wallet>.shards{margin-left:auto;font-size:20px}.fc-market-wallet>a{display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa4b0;width:100%}
+.fc-comptoir-events{padding:10px 16px;max-height:490px;overflow:auto;min-height:180px}
+.fc-comptoir-events>div{display:flex;gap:10px;padding:14px 0}.fc-comptoir-avatar{display:grid;place-items:center;flex-shrink:0;width:34px;height:34px;border-radius:50%;border:2px solid #f5c518;background:#24202a;font-weight:700;font-size:12px}
+.fc-comptoir-events b{font-size:13px;color:#edeae4}.fc-comptoir-events p{font-size:13px;line-height:1.6;color:#aaa4b0}.fc-comptoir-events time{font:400 10px var(--fc-mono);color:#756b80}
+.fc-market-activity>.button{width:calc(100% - 32px);margin:0 16px}.fc-comptoir-note{padding:15px 16px 0;font-size:11px;color:#807789;line-height:1.6}
+
+/* Public ranking geometry: floating avatars over three compact plinths. */
+.fc-rankings-page .ranking-metrics{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;background:none;border:0;padding:0}
+.fc-rankings-page .ranking-metrics button{display:flex;align-items:center;gap:8px;min-height:40px;padding:8px 16px;border:1px solid #302b38;border-radius:999px;font-size:13px;background:#111015;color:#aaa4b0}
+.fc-rankings-page .ranking-metrics button svg{color:#ff4d2e}.fc-rankings-page .ranking-metrics button.active{background:#edeae4;border-color:#edeae4;color:#0e0d12}
+.fc-ranking-description{font-size:18px;color:#b2aabd;margin-bottom:14px}
+.fc-ranking-search{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.fc-ranking-search>select{width:110px}.fc-ranking-search>span{margin-left:auto;font-size:13px;color:#a49bae}
+.fc-shell .fc-rankings-page .podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:end;margin:24px 0 28px}
+.fc-shell .fc-rankings-page .podium-card{background:none;border:0;padding:0;border-radius:0;min-height:0;display:block;position:relative;overflow:visible;text-align:center;transform:none;box-shadow:none;order:initial}
+.fc-shell .fc-rankings-page .podium-card:hover{transform:translateY(-3px);background:none;border:0}
+.fc-podium-player{display:flex;flex-direction:column;align-items:center;height:270px;justify-content:flex-end;padding-bottom:24px}
+.place-1 .fc-podium-player{height:300px}.fc-avatar-crown{position:relative;margin-bottom:4px}
+.fc-avatar-crown>.avatar{width:94px;height:94px;border:4px solid #c4baca;box-shadow:0 0 13px #e1b35840;background:radial-gradient(circle at 30% 20%,#4c424d,#1b1720 75%);font:700 29px var(--fc-heading);color:#f1eade}
+.place-1 .fc-avatar-crown>.avatar{width:124px;height:124px;border-color:#f5c518;box-shadow:0 0 18px #f5c51855}.place-3 .fc-avatar-crown>.avatar{border-color:#ad72ff}
+.fc-avatar-crown>span{position:absolute;right:8px;top:-8px;color:#fff2bb;font-size:26px;text-shadow:0 0 8px #f5c518}
+.fc-shell .fc-rankings-page .podium-card h2{font-size:22px;margin:0;line-height:1.15}.fc-shell .fc-rankings-page .place-1 h2{font-size:26px}
+.fc-podium-player>p{font-size:12px;color:#ff4d2e;margin:5px 0}
+.fc-podium-badge{border:1px solid #dbbd57;background:linear-gradient(120deg,#443617,#1c1712);color:#f6dd82;border-radius:6px;font-size:11px;padding:3px 9px;display:flex;gap:5px;align-items:center}
+.fc-podium-symbols{display:flex;gap:7px;color:#ff4d2e;margin-top:8px}.fc-podium-symbols>svg{border:1px solid #4d3940;border-radius:4px;padding:2px;width:22px;height:22px;background:#1b1720}
+.fc-podium-plinth{position:relative;border:1px solid #6b6276;border-bottom:0;border-radius:15px 15px 5px 5px;padding:17px 10px 15px;background:linear-gradient(#39343d,#111015);height:86px;color:#c8c1cd}
+.place-1 .fc-podium-plinth{height:116px;border-color:#8b7314;background:linear-gradient(#40371a,#111015);color:#f5c518;padding-top:24px}
+.place-3 .fc-podium-plinth{border-color:#775338;background:linear-gradient(#392c25,#111015);color:#d98f46}
+.fc-place-number{position:absolute;top:-15px;left:calc(50% - 14px);display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:currentColor;isolation:isolate;font-size:0}
+.fc-place-number:after{content:attr(data-rank)}
+.fc-podium-plinth .fc-place-number{color:#111015;background:#c8c1cd;font:900 16px var(--fc-heading)}.place-1 .fc-place-number{background:#f5c518}.place-3 .fc-place-number{background:#d98f46}
+.fc-shell .fc-rankings-page .podium-card .fc-podium-plinth strong{display:block;font:900 31px/1.2 var(--fc-heading);color:inherit}.fc-shell .fc-rankings-page .place-1 .fc-podium-plinth strong{font-size:36px}
+.fc-podium-plinth>small{font-size:12px;color:#8f879a;display:block}
+.fc-shell .ranking-table{padding:0;overflow:hidden;background:#121117;border-radius:18px}
+.fc-shell .ranking-row{min-height:72px;padding:12px 18px;border-color:#25212c;grid-template-columns:36px minmax(0,1fr) 200px 16px;gap:10px;font-size:14px}
+.fc-shell .ranking-row .avatar{width:42px;height:42px;border:2px solid #b072ff;background:#28202e;color:#e2d2ed}
+.fc-shell .ranking-row strong{font-family:var(--fc-heading);font-size:20px}.fc-shell .ranking-row strong small{font:400 11px var(--fc-body);color:#9991a6;display:block}
+.fc-shell .ranking-row.is-me{background:#ff4d2e08}.fc-shell .ranking-table-head{font:400 11px var(--fc-mono);min-height:44px;color:#84798f}
+
+/* Existing functional pages share the measured surfaces and typography. */
+.fc-shell .stat-grid{gap:20px;margin:28px 0}.fc-shell .stat-card{background:#141218;border:1px solid #302a37;border-radius:16px;padding:24px}
+.fc-shell .stat-card strong{font:900 32px var(--fc-heading)}.fc-shell .stat-card>span{font-size:13px;color:#aaa4b0}
+.fc-shell .stat-card strong small{font:400 13px var(--fc-mono);color:#82798e}
+.fc-shell .profile-banner{background:#151219;border:1px solid #302a37;border-radius:18px;overflow:hidden;margin-bottom:28px}
+.fc-shell .profile-cover{background:radial-gradient(ellipse at 65% 0,#ff4d2e25,transparent 65%),repeating-linear-gradient(135deg,#ffffff02 0 8px,transparent 8px 16px),#151219;opacity:1}
+.fc-shell .profile-identity{padding:32px}.fc-shell .profile-identity h1{font-size:48px;line-height:1.2}.fc-shell .profile-identity .avatar-large{border-color:#ff4d2e;background:#2b2028;color:#f5d9c6}
+.fc-shell .profile-identity p{font-size:14px}.fc-shell .profile-summary{border-color:#302a37}
+.fc-shell .profile-summary b{font-family:var(--fc-heading)}
+.fc-shell .achievement-banner,.fc-shell .info-banner,.fc-shell .referral-hero{background:radial-gradient(ellipse at 50% 0,#ff4d2e18,transparent 65%),#141218;border:1px solid #302a37;border-radius:18px;color:#edeae4}
+.fc-shell .achievement-banner h2{font-size:24px}.fc-shell .achievement-banner p{font-size:14px}
+.fc-shell .achievement-card{background:#151219;border:1px solid #302a37;border-radius:16px;padding:22px}.fc-shell .achievement-card.unlocked{border-color:#78671f;background:linear-gradient(130deg,#f5c51809,#151219)}
+.fc-shell .achievement-icon{background:#241c20;border:1px solid #623529;border-radius:12px;color:#ff4d2e}
+.fc-shell .achievement-card.unlocked .achievement-icon{color:#f5c518;border-color:#685b25;background:#282418}
+.fc-shell .achievement-body h3{font-size:15px}.fc-shell .achievement-body p{font-size:13px}.fc-shell .achievement-meta{font-size:11px;font-family:var(--fc-mono)}
+.fc-shell .event-panel{background:#151219;border-color:#302a37;border-radius:18px;overflow:hidden}.fc-shell .event-content h2{font-size:32px}.fc-shell .event-content p{font-size:16px}
+.fc-shell .news-card{background:#151219;border:1px solid #302a37;border-radius:18px}.fc-shell .news-card h2{font-size:24px}.fc-shell .news-card p{font-size:15px}
+.fc-shell .rules-card{background:#151219;border-color:#302a37;border-radius:18px}.fc-shell .rules-card h2{font-size:24px}
+.fc-shell .trade-panel .section-heading{font-size:16px}.fc-shell .trade-card{background:#1b1720;border-color:#352b3c;border-radius:12px;padding:10px}
+.fc-shell .trade-card img{border-radius:8px;aspect-ratio:5/7;width:55px;height:77px;object-fit:cover}.fc-shell .trade-card b{font-size:14px}.fc-shell .trade-card small{font-size:12px}
+.fc-shell .status-tag{font-size:11px;border-radius:999px}.fc-shell .trade-footer time{font:400 11px var(--fc-mono);color:#93879f}
+.fc-shell .referral-hero{padding:44px 32px}.fc-shell .referral-hero h2{font-size:32px}.fc-shell .referral-hero p{font-size:16px}
+.fc-shell .referral-code{border-color:#705536;background:#110e14}.fc-shell .referral-code code{font-family:var(--fc-mono)}
+.fc-shell .preferences-panel,.fc-shell .settings-panel{background:#151219;border-color:#302a37}.fc-shell .switch.active{background:#ff4d2e}
+.fc-shell .danger-zone{border-color:#66302d;background:#241317}
+@media(min-width:1400px){.fc-rankings-page .page-intro h1{font-size:60px}}
+@media(max-width:1100px){.fc-market-layout{grid-template-columns:minmax(0,1fr) 320px;gap:20px}.fc-shell .market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fc-shell .page-intro h1{font-size:48px}.fc-rankings-page .page-intro h1{font-size:44px}}
+@media(max-width:800px){.fc-market-layout{display:block}.fc-market-activity{position:static;margin-top:28px}.fc-shell .market-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.fc-shell .page-intro{align-items:flex-start;flex-direction:column}.fc-shell .page-intro h1{font-size:38px}.fc-podium-player{height:245px}.place-1 .fc-podium-player{height:265px}}
+@media(max-width:600px){
+ .fc-shell .page-intro{gap:14px;margin-bottom:22px}.fc-shell .page-intro h1{font-size:34px;line-height:1.12;margin:10px 0 12px;overflow-wrap:anywhere}.fc-shell .page-intro p{font-size:15px;line-height:1.6}.fc-shell h2{font-size:24px}.fc-shell h3{font-size:16px}.fc-shell .eyebrow{font-size:10px;letter-spacing:1px}
+ .fc-shell .button{font-size:13px;padding:10px 17px}.fc-shell .button.primary{font-size:12px}.fc-shell .panel{padding:20px;border-radius:16px}.fc-shell .section-block{margin-top:32px}
+ .fc-shell .modal-backdrop{padding:12px}.fc-shell .modal{padding:20px;border-radius:18px;max-height:calc(100dvh - 24px)}.fc-shell .modal-heading h2{font-size:19px}.fc-shell .modal-heading{gap:8px}.fc-shell .modal p{font-size:14px}.fc-shell .form-grid{grid-template-columns:1fr}
+ .fc-shell .tabs{overflow-x:auto;gap:0;flex-wrap:nowrap;margin-bottom:18px}.fc-shell .tabs>button{padding:12px;font-size:12px;flex-shrink:0}.fc-shell .filter-panel{flex-wrap:wrap}.fc-shell .search-field{width:100%}
+ .fc-shell .market-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.fc-shell .listing-card{padding:7px;border-radius:14px}.fc-shell .listing-body{padding:9px 1px}.fc-shell .listing-seller{font-size:11px}.fc-shell .listing-price .shards{font-size:20px}.fc-sale-kind{font-size:9px}.fc-sale-kind>small{font-size:9px}
+ .fc-shell .listing-price small{display:none}.fc-shell .listing-body>.button{font-size:11px;padding:8px 6px}.fc-shell .results-heading{font-size:11px}.fc-market-main .results-heading>.muted{display:none}
+ .fc-shell .fc-filter-toggle{display:inline-flex;width:max-content;min-height:36px;border-radius:10px;padding:8px 14px}.fc-market-selects{display:none;flex-direction:column;align-items:stretch}.fc-market-selects.is-open{display:flex}.fc-market-selects label{display:grid;grid-template-columns:55px 1fr}.fc-market-selects label:first-child select,.fc-market-selects select{width:100%;max-width:none}.fc-market-selects label:last-child{display:flex}.fc-market-selects input{flex:1;width:65px}
+ .fc-rankings-page .page-intro h1{font-size:33px}.fc-rankings-page .ranking-metrics{flex-wrap:nowrap;overflow-x:auto;margin-right:-16px;padding-right:16px}.fc-rankings-page .ranking-metrics button{flex-shrink:0;padding:8px 12px;font-size:12px}.fc-ranking-description{font-size:14px}.fc-ranking-search .search-field{width:100%}.fc-ranking-search select{width:98px}.fc-ranking-search>span{font-size:12px}
+ .fc-shell .fc-rankings-page .podium{gap:8px;margin-top:20px}.fc-podium-player{height:188px;padding-bottom:17px}.place-1 .fc-podium-player{height:217px}.fc-avatar-crown>.avatar{width:65px;height:65px;font-size:20px;border-width:3px}.place-1 .fc-avatar-crown>.avatar{width:82px;height:82px}.fc-avatar-crown>span{font-size:17px;right:0;top:-5px}
+ .fc-shell .fc-rankings-page .podium-card h2,.fc-shell .fc-rankings-page .place-1 h2{font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fc-podium-player>p{font-size:9px}.fc-podium-badge{font-size:8px;padding:2px 4px;gap:3px}.fc-podium-badge>svg{width:10px}.fc-podium-symbols{gap:3px}.fc-podium-symbols>svg{width:18px;height:18px}
+ .fc-podium-plinth{height:74px;padding-top:18px;border-radius:12px 12px 5px 5px}.place-1 .fc-podium-plinth{height:90px;padding-top:23px}.fc-shell .fc-rankings-page .podium-card .fc-podium-plinth strong{font-size:19px}.fc-shell .fc-rankings-page .place-1 .fc-podium-plinth strong{font-size:23px}.fc-podium-plinth>small{font-size:10px}.fc-place-number{width:24px;height:24px;left:calc(50% - 12px);top:-12px}
+ .fc-shell .ranking-row{grid-template-columns:22px minmax(0,1fr) 65px;min-height:70px;padding:10px;gap:7px;font-size:12px}.fc-shell .ranking-row>svg{display:none}.fc-shell .ranking-row .avatar{width:32px;height:32px;font-size:9px}.fc-shell .ranking-row strong{font-size:14px}.fc-shell .ranking-row .tag{display:none}.fc-shell .ranking-table-head{font-size:9px;min-height:40px}.fc-shell .ranking-table-head>span:nth-child(3){font-size:8px}
+ .fc-shell .profile-identity{padding:24px 18px;gap:14px;flex-wrap:wrap}.fc-shell .profile-identity h1{font-size:30px}.fc-shell .profile-identity .avatar-large{width:72px;height:72px;font-size:23px}.fc-shell .profile-identity>.button{width:100%}.fc-shell .stat-grid{gap:12px;margin:22px 0;grid-template-columns:repeat(2,minmax(0,1fr))}.fc-shell .stat-card{padding:16px}.fc-shell .stat-card strong{font-size:24px}.fc-shell .stat-card>span{font-size:11px}
+ .fc-shell .achievement-banner{padding:22px;gap:18px}.fc-shell .achievement-banner h2{font-size:20px}.fc-shell .achievement-card{padding:18px}.fc-shell .referral-hero{padding:28px 20px}.fc-shell .referral-hero h2{font-size:24px}.fc-shell .referral-hero p{font-size:14px}.fc-shell .referral-code{max-width:100%;gap:8px}.fc-shell .referral-code code{font-size:15px}.fc-shell .trade-columns{gap:14px}.fc-shell .trade-panel .section-heading{font-size:13px}.fc-shell .history-row{font-size:12px;gap:12px}.fc-shell .history-row time{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.fc-shell .podium-card,.fc-shell .button{transition:none!important;transform:none!important}}
