@@ -37,6 +37,9 @@ export function CardDisplay({
   const appearance = CARD_RARITY_STYLES[card.rarity];
   const inventory = state.inventory.find(item => item.cardId === card.id);
   const series = state.series.find(item => item.id === card.seriesId);
+  // Stable fictional combat values: consistent for a card across the catalogue.
+  const attack = 6 + (card.number * 7 + card.rarity * 11) % 35;
+  const defense = 5 + (card.number * 5 + card.rarity * 9) % 32;
   const motionDisabled = reducedMotion || !!state.currentUser?.preferences.reducedMotion;
   const missing = muted && !inventory;
   const label = missing
@@ -60,8 +63,8 @@ export function CardDisplay({
     <>
       <CardRarityFrame rarity={card.rarity} />
       <span className="fc-card-top card-caption">
+        <span className="fc-card-rarity-badge" title={rarity.name} aria-label={`Rareté : ${rarity.name}`}>{appearance.letter}</span>
         <strong className="fc-card-name" title={card.name}>{card.name}</strong>
-        <span className="fc-card-rarity-badge" title={rarity.name}>{appearance.letter}</span>
       </span>
       <span className="fc-card-art card-art">
         <img src={card.image} alt={`Illustration de ${card.name}`} loading="lazy" decoding="async" draggable={false} />
@@ -72,9 +75,8 @@ export function CardDisplay({
       </span>
       <span className="fc-card-series" title={series?.name}>{series?.name}</span>
       <span className="fc-card-stats card-caption-bottom">
-        <span title="Points de collection">PTS <b>{card.collectionPoints}</b></span>
-        <span title="Valeur de recyclage en Éclats">ÉCL <b>{card.recycleValue}</b></span>
-        <span className="owned-count" title="Exemplaires dans votre inventaire">EX <b>{inventory?.quantity || 0}</b></span>
+        <span className="fc-combat-bubble fc-combat-attack" title={`Attaque : ${attack}`} aria-label={`Attaque : ${attack}`}>{attack}</span>
+        <span className="fc-combat-bubble fc-combat-defense" title={`Défense : ${defense}`} aria-label={`Défense : ${defense}`}>{defense}</span>
       </span>
       <CardHolographicEffect rarity={card.rarity} />
     </>
