@@ -115,3 +115,5 @@ jobs:
         run: npm run db:check:runtime
       - name: Exercise all game transactions with rollback and verify cleanup
         run: npm run db:test:writes
+      - name: Test simultaneous booster replays on separate PostgreSQL connections
+        run: npx tsx scripts/test-postgres-concurrency-ci.ts
