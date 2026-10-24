@@ -82,6 +82,6 @@ export async function pgState(userId:string|null):Promise<StateResponse>{
    news:await q<StateResponse['news'][number]>('SELECT id,title,body,kind,published_at AS "publishedAt" FROM news ORDER BY published_at DESC LIMIT 100'),
    rankings,priceHistory:await q<StateResponse['priceHistory'][number]>('SELECT card_id AS "cardId",unit_price AS "unitPrice",quantity,sold_at AS "soldAt" FROM price_history ORDER BY sold_at DESC LIMIT 500'),
    acquisitions:currentUser?await q<StateResponse['acquisitions'][number]>('SELECT id,card_id AS "cardId",quantity,source,created_at AS "createdAt",reference_id AS "referenceId" FROM acquisitions WHERE user_id=$1 ORDER BY created_at DESC,id DESC LIMIT 500',[userId]):[],
-   activities:await q<StateResponse['activities'][number]>('SELECT id,user_id AS "userId",kind,message,created_at AS "createdAt" FROM activities ORDER BY created_at DESC,id DESC LIMIT 100'),config:GAME_CONFIG};
+   activities:await q<StateResponse['activities'][number]>("SELECT id,user_id AS \"userId\",kind,message,created_at AS \"createdAt\" FROM activities WHERE kind IN ('opening','achievement','market','trade','event') OR user_id=$1 ORDER BY created_at DESC,id DESC LIMIT 100",[userId]),config:GAME_CONFIG};
  });
 }
