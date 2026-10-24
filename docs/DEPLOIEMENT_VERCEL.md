@@ -5,7 +5,7 @@ Le workflow `.github/workflows/ci.yml` vérifie TypeScript, les tests unitaires 
 
 ## Validation fonctionnelle avant activation (une seule session)
 Sous Windows : une fois tous les changements récupérés, lancer `powershell -ExecutionPolicy Bypass -File .\\scripts\\VALIDATION-FINALE.ps1`. Cette commande regroupe typecheck, tests, build, contrôle des images et tests PostgreSQL avec une seule saisie masquée de l'URI.
-Sur le poste local, lancer `npm run db:check:runtime` et `npm run db:test:writes` avec **la même** variable privée `DATABASE_URL` issue du Session Pooler Supabase. Ne jamais coller l'URI dans GitHub ou dans un journal partagé. Les tests d'écriture utilisent une transaction annulée à la fin, mais nécessitent encore une validation d'exécution réussie.
+Sur le poste local, lancer `npm run db:check:runtime`, `npm run db:check:artwork` et `npm run db:test:writes` avec **la même** variable privée `DATABASE_URL` issue du Session Pooler Supabase. Ne jamais coller l'URI dans GitHub ou dans un journal partagé. Les tests d'écriture utilisent une transaction annulée à la fin, mais nécessitent encore une validation d'exécution réussie.
 
 ## Assets
 L'audit local `npm run art:check` a été rapporté comme réussi (2467 fichiers uniques, aucun manquant). Le contrôle GitHub Actions des images du catalogue de démonstration est aussi passé (exécutions #73 et #74), mais ne vérifie pas encore toutes les 4833 cartes du catalogue Supabase. Vérifier le catalogue intégral et les réponses HTTP des images sur la préproduction avant ouverture.
