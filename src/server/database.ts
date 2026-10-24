@@ -106,7 +106,7 @@ export function seed(db: DatabaseSync = getDb()): void {
     const date = now();
     for (const s of SERIES) db.prepare('INSERT OR IGNORE INTO series VALUES(?,?,?,?)').run(s.id,s.name,s.description,s.color);
     for (const c of CARDS) db.prepare('INSERT OR IGNORE INTO cards VALUES(?,?,?,?,?,?,?,?,?)').run(c.id,c.number,c.name,c.rarity,c.seriesId,c.description,c.image,c.recycleValue,c.collectionPoints);
-    db.prepare('INSERT OR IGNORE INTO events VALUES(?,?,?,?,?,?,?,?)').run('convergence','La convergence des astres','Les citadelles d’Aetherion s’illuminent. Explorez leur booster et recevez une prime unique de 80 Éclats.',new Date(Date.now()-86400000).toISOString(),new Date(Date.now()+30*86400000).toISOString(),1,'#ad8aff',80);
+    db.prepare('INSERT OR IGNORE INTO events VALUES(?,?,?,?,?,?,?,?)').run('convergence','Légendes de Frigost','Découvrez les créatures et les boss de Frigost. Une première ouverture offre 80 Éclats.',new Date(Date.now()-86400000).toISOString(),new Date(Date.now()+30*86400000).toISOString(),1,'#ad8aff',80);
     for (const b of BOOSTERS) db.prepare('INSERT OR IGNORE INTO boosters VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').run(b.id,b.name,b.description,b.kind,b.price,b.color,b.guarantee,JSON.stringify(b.weights),b.pityLimit,b.cooldownSeconds,b.eventId,b.seriesId,b.capacity);
     const achievementRows: [string,string,string,string,number,number][] = [
       ['first-opening','Premier éclat','Ouvrir votre premier booster.','sparkles',1,20],
@@ -120,8 +120,8 @@ export function seed(db: DatabaseSync = getDb()): void {
       ['ten-openings','Le rituel des étoiles','Ouvrir dix boosters.','gift',10,75],
     ];
     for (const a of achievementRows) db.prepare('INSERT OR IGNORE INTO achievements VALUES(?,?,?,?,?,?)').run(...a);
-    db.prepare('INSERT OR IGNORE INTO news VALUES(?,?,?,?,?)').run('welcome','Bienvenue dans les chroniques','Trois univers, soixante-douze cartes originales et une collection à façonner. Cette édition locale utilise uniquement des Éclats fictifs.','news',date);
-    db.prepare('INSERT OR IGNORE INTO news VALUES(?,?,?,?,?)').run('convergence-news','Les astres se rencontrent','Le booster Convergence rassemble les habitants des Citadelles astrales pendant l’événement. Une première ouverture offre une récompense unique.','event',date);
+    db.prepare('INSERT OR IGNORE INTO news VALUES(?,?,?,?,?)').run('welcome','Bienvenue dans les chroniques du Monde des Douze','Trois albums et soixante-douze cartes de collection non officielles. Les illustrations actuelles restent fictives.','news',date);
+    db.prepare('INSERT OR IGNORE INTO news VALUES(?,?,?,?,?)').run('convergence-news','Les légendes de Frigost','Découvrez les habitants de Frigost dans un booster événementiel. Une première ouverture offre une récompense unique.','event',date);
     db.prepare('INSERT OR IGNORE INTO news VALUES(?,?,?,?,?)').run('launch','Carnet de mise à jour · 1.0','Ouvertures sécurisées, albums, marché entre joueurs, échanges et succès sont réunis dans cette première édition.','update',date);
     if (isDevelopmentMode()) {
       for (const [userId, username, role] of [['fredou','Fredou','admin'],['iris','Iris','player'],['noam','Noam','player']] as const) {
