@@ -99,6 +99,13 @@ async function main() {
    assert.ok(gifts.every(x=>x.amount===100));
    // Admin-only event actions must not be available to a regular player.
    await assert.rejects(pgSaveEvent(one.id,{type:'event-save',name:'Test',description:'Test',startsAt:new Date().toISOString(),endsAt:new Date(Date.now()+86400000).toISOString(),active:false,color:'#000000',reward:0},randomUUID()));
+   // Positive admin path: temporary event is rolled back with the rest of this suite.
+   await pgRead("UPDATE users SET role='admin' WHERE id=$1",[one.id]);
+   const eventAction={type:'event-save' as const,name:'Intégration temporaire',description:'test',startsAt:new Date().toISOString(),endsAt:new Date(Date.now()+86400000).toISOString(),active:false,color:'#224466',reward:25};
+   const eventSaved=await pgSaveEvent(one.id,eventAction,randomUUID());
+   assert.ok(eventSaved.entityId);
+   const eventRow=await pgRead<{name:string}>('SELECT name FROM events WHERE id=$1',[eventSaved.entityId]);
+   assert.equal(eventRow[0].name,eventAction.name);
    const state=await pgState(one.id);
    assert.equal(state.currentUser?.id,one.id);
    assert.ok(state.openings.length>0);
