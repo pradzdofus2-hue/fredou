@@ -19,18 +19,18 @@ test('desktop catalogue, filters, detail and keyboard modal navigation',async({p
   const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
   await login(page);
   await page.goto('/collection');
-  await expect(page.getByRole('heading',{name:'Votre collection',exact:true})).toBeVisible();
-  await expect(page.locator('.cards-grid .collection-card')).toHaveCount(18);
-  await expect.poll(()=>page.locator('.cards-grid .collection-card img').first().evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBeTruthy();
-  await page.getByLabel('Rareté',{exact:true}).selectOption('5');
-  const count=await page.locator('.cards-grid .collection-card').count();expect(count).toBeGreaterThan(0);expect(count).toBeLessThan(18);
+  await expect(page.getByRole('heading',{name:'Ma collection',exact:true})).toBeVisible();
+  await expect(page.locator('.cards-grid .fc-card-tile')).toHaveCount(18);
+  await expect.poll(()=>page.locator('.cards-grid .fc-card-tile img').first().evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBeTruthy();
+  await page.getByRole('button',{name:/Mythique/i}).first().click();
+  const count=await page.locator('.cards-grid .fc-card-tile').count();expect(count).toBeGreaterThan(0);expect(count).toBeLessThan(18);
   await page.getByLabel('Rechercher une carte',{exact:true}).fill('aucune-carte-inexistante');
   await expect(page.getByText('Aucune carte trouvée',{exact:true})).toBeVisible();
   await page.getByLabel('Rechercher une carte',{exact:true}).fill('');
-  await page.locator('.cards-grid .collection-card').first().click();
+  await page.locator('.cards-grid .fc-card-tile').first().click();
   await expect(page.locator('.detail-information h1')).toBeVisible();
   await page.goto('/boosters');
-  await page.getByRole('button',{name:/Voir les probabilités/}).first().click();
+  await page.getByRole('button',{name:/Probabilités et garanties/}).first().click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(errors).toEqual([]);
@@ -38,8 +38,9 @@ test('desktop catalogue, filters, detail and keyboard modal navigation',async({p
 test('real booster opening reveals five server-awarded cards and persists on reload',async({page})=>{
   await login(page);
   await page.goto('/boosters');
-  const premium=page.locator('.booster-premium');
+  const premium=page.locator('.fc-booster-showcase');
   await expect(premium).toBeVisible();
+  await page.getByRole('tab',{name:'Boutique'}).click();
   if(await premium.getByRole('button',{name:/Obtenir pour/}).count()) {
     await premium.getByRole('button',{name:/Obtenir pour/}).click();
     await page.getByRole('dialog').getByRole('button',{name:'Confirmer l’achat',exact:true}).click();
@@ -56,7 +57,7 @@ test('real booster opening reveals five server-awarded cards and persists on rel
   await expect(dialog.locator('.opening-reward')).toContainText('Collection mise à jour');
   await dialog.getByRole('button',{name:'Retour à l’aventure',exact:true}).click();
   await page.reload();
-  await expect(page.locator('.history-row').first()).toContainText('Prisme céleste');
+  await expect(page.locator('.fc-booster-history-row').first()).toContainText('Prisme céleste');
 });
 test('market publication and cancellation restore reserved inventory',async({page})=>{
   await login(page);
@@ -82,7 +83,7 @@ test('mobile navigation, responsive layout and reduced-motion preference',async(
   await expect(page.locator('.album-panel')).toHaveCount(3);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBeTruthy();
   await page.goto('/collection');
-  await expect(page.locator('.cards-grid .collection-card').first()).toBeVisible();
+  await expect(page.locator('.cards-grid .fc-card-tile').first()).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBeTruthy();
 });
 
@@ -154,7 +155,7 @@ test('disposable account recycling preserves identities and preferences survive 
   const recycleValue=before.inventory.reduce((total,item)=>total+Math.max(0,item.quantity-1)*before.cards.find(c=>c.id===item.cardId)!.recycleValue,0);
   expect(recycleValue).toBeGreaterThan(0);
   await page.goto('/collection');
-  await page.getByRole('button',{name:/Recycler pour/}).click();
+  await page.getByRole('button',{name:/Recycler les doublons/}).click();
   await page.getByRole('dialog').getByRole('button',{name:'Confirmer le recyclage',exact:true}).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   const after=await state(page);
