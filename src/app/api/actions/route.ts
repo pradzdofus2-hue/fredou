@@ -1,3 +1,4 @@
+import { deletePgAccount } from '@/server/postgres-account-delete';
 import { pgSaveEvent } from '@/server/postgres-events';
 import { pgRecycle } from '@/server/postgres-recycle';
 import { pgReferral } from '@/server/postgres-referral';
@@ -29,6 +30,12 @@ export async function POST(request: Request) {
       if (pgAction.type === 'logout') {
         await revokePgSession(token);
         const response=json({state:await pgState(null),result:{type:'logout',message:'Vous êtes déconnecté.'}} satisfies ActionResponse);
+        response.headers.append('Set-Cookie','fredou_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'+(process.env.APP_URL?.startsWith('https:')?'; Secure':''));
+        return response;
+      }
+      if (pgAction.type === 'account-delete') {
+        const result=await deletePgAccount(pgUser,pgAction.confirmation);
+        const response=json({state:await pgState(null),result} satisfies ActionResponse);
         response.headers.append('Set-Cookie','fredou_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'+(process.env.APP_URL?.startsWith('https:')?'; Secure':''));
         return response;
       }
