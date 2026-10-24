@@ -1,6 +1,6 @@
 'use client';
 
-import { Compass, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { Card } from '@/lib/contracts';
 import { useGame } from '../game-context';
@@ -53,8 +53,8 @@ export function CardReveal({
             <span className="fc-card-back-corner fc-card-back-corner-tr" />
             <span className="fc-card-back-corner fc-card-back-corner-bl" />
             <span className="fc-card-back-corner fc-card-back-corner-br" />
-            <span className="fc-card-back-medallion"><Compass size={48} strokeWidth={1.2} /></span>
-            <span className="fc-card-back-brand">FREDOU</span>
+            <span className="fc-card-back-medallion"><img src="/branding/krosmoria-logo.svg" alt="" draggable={false} /></span>
+            <span className="fc-card-back-brand">KROSMORIA</span>
             <span className="fc-card-back-caption">COLLECTION</span>
             <span className="fc-card-back-hint"><Sparkles size={12} /> RÉVÉLER</span>
           </button>
