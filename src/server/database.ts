@@ -89,6 +89,13 @@ export function seed(db: DatabaseSync = getDb()): void {
   db.exec('BEGIN IMMEDIATE');
   try {
     if (db.prepare("SELECT value FROM settings WHERE key='seed_version'").get()) {
+      // Synchroniser le catalogue sur les IDs existants sans effacer les inventaires, ventes ou historiques.
+      // La structure de la base reste inchangée ; la nouvelle édition réutilise les identifiants card-N.
+      for (const s of SERIES) db.prepare('UPDATE series SET name=?,description=?,color=? WHERE id=?').run(s.name,s.description,s.color,s.id);
+      for (const c of CARDS) db.prepare('UPDATE cards SET name=?,rarity=?,series_id=?,description=?,image=? WHERE id=?')
+        .run(c.name,c.rarity,c.seriesId,c.description,c.image,c.id);
+      db.prepare('UPDATE events SET name=?,description=? WHERE id=?')
+        .run('Légendes de Frigost','Découvrez les légendes gelées du Monde des Douze dans un booster événementiel.','convergence');
       // Configuration changes take effect on restart without resetting inventories or the economy.
       for (const b of BOOSTERS) db.prepare('UPDATE boosters SET name=?,description=?,price=?,color=?,guarantee=?,weights=?,pity_limit=?,cooldown_seconds=?,capacity=? WHERE id=?').run(b.name,b.description,b.price,b.color,b.guarantee,JSON.stringify(b.weights),b.pityLimit,b.cooldownSeconds,b.capacity,b.id);
       // Future recycling and current rankings use the current central configuration.
