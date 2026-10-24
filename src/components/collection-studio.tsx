@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useMemo,useState} from 'react';
+import './collection-studio.css';
 import {useGame} from './game-context';
 import {PageIntro} from './primitives';
 type Studio={wishlist:string[];cosmetic:{title:string;banner:string;featured_card:string|null};season:{key:string;xp:number;level:number;claimed:number[]};titles:string[];banners:string[]};
