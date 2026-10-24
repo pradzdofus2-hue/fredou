@@ -9,6 +9,9 @@ import { pgListingAction } from '../src/server/postgres-listings';
 import { pgBuyListing } from '../src/server/postgres-market-buy';
 import { pgState } from '../src/server/postgres-state';
 import { pgTradeAction } from '../src/server/postgres-trades';
+import { pgRecycle } from '../src/server/postgres-recycle';
+import { pgReferral } from '../src/server/postgres-referral';
+import { pgSaveEvent } from '../src/server/postgres-events';
 
 async function main() {
  if (!process.env.DATABASE_URL && !process.env.SUPABASE_DB_URL) throw Error('URI PostgreSQL requise.');
@@ -71,6 +74,20 @@ async function main() {
     [one.id,two.id,swap[1].id,swap[0].id]);
    assert.equal(traded.length,2);
    assert.ok(traded.every(x=>x.quantity>=1));
+   // Recycling preserves one copy and credits the exact recycle value.
+   await pgRead('UPDATE inventory SET quantity=3 WHERE user_id=$1 AND card_id=$2',[one.id,swap[1].id]);
+   const recycle=await pgRecycle(one.id,{type:'recycle',cardId:swap[1].id},randomUUID());
+   assert.equal(recycle.quantity,2);
+   const afterRecycling=await pgRead<{quantity:number}>('SELECT quantity FROM inventory WHERE user_id=$1 AND card_id=$2',[one.id,swap[1].id]);
+   assert.equal(afterRecycling[0].quantity,1);
+   // A referral is registered once, and subsequent attempts must not overwrite it.
+   const ref=await pgRead<{referral_code:string}>('SELECT referral_code FROM users WHERE id=$1',[two.id]);
+   const referral=await pgReferral(one.id,{type:'referral',code:ref[0].referral_code},randomUUID());
+   assert.equal(referral.type,'referral');
+   const linked=await pgRead<{referred_by:string}>('SELECT referred_by FROM users WHERE id=$1',[one.id]);
+   assert.equal(linked[0].referred_by,two.id);
+   // Admin-only event actions must not be available to a regular player.
+   await assert.rejects(pgSaveEvent(one.id,{type:'event-save',name:'Test',description:'Test',startsAt:new Date().toISOString(),endsAt:new Date(Date.now()+86400000).toISOString(),active:false,color:'#000000',reward:0},randomUUID()));
    const state=await pgState(one.id);
    assert.equal(state.currentUser?.id,one.id);
    assert.ok(state.openings.length>0);
