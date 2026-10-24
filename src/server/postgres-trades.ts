@@ -15,11 +15,13 @@ async function validate(db:PoolClient,user:string,items:TradeItem[]):Promise<num
  for(const item of items){
   ensure(Number.isSafeInteger(item.quantity)&&item.quantity>=1,'VALIDATION_ERROR','Quantité invalide.');
   count+=item.quantity;
+  ensure(Number.isSafeInteger(count),'VALIDATION_ERROR','Quantité cumulée invalide.',422);
   const rows=await db.query<{quantity:number;recycle_value:number}>('SELECT i.quantity,c.recycle_value FROM inventory i JOIN cards c ON c.id=i.card_id WHERE i.user_id=$1 AND i.card_id=$2',[user,item.cardId]);
   ensure(rows.rows[0]&&rows.rows[0].quantity>=item.quantity,'CONFLICT','Cartes insuffisantes.',409);
   value+=rows.rows[0].recycle_value*item.quantity;
+  ensure(Number.isSafeInteger(value)&&value>0,'VALIDATION_ERROR','Valeur de cartes invalide.',422);
  }
- ensure(count<=GAME_CONFIG.maxTradeQuantity,'VALIDATION_ERROR','Trop de cartes.',422);
+ ensure(Number.isSafeInteger(count)&&count<=GAME_CONFIG.maxTradeQuantity,'VALIDATION_ERROR','Trop de cartes.',422);
  return value;
 }
 function fairness(a:number,b:number):void{
@@ -70,6 +72,7 @@ export async function pgTradeAction(userId:string,action:TradeAction,key:string)
     const other=await db.query('SELECT id FROM users WHERE id=$1 FOR UPDATE',[otherId]);
     ensure(other.rowCount===1,'CONFLICT','Joueur indisponible.',409);
     const offered=JSON.parse(trade.offered) as TradeItem[],requested=JSON.parse(trade.requested) as TradeItem[];
+    ensure(!offered.some(x=>requested.some(y=>y.cardId===x.cardId)),'VALIDATION_ERROR','Carte présente des deux côtés.',422);
     fairness(await validate(db,trade.sender_id,offered),await validate(db,trade.recipient_id,requested));
     await move(db,trade.sender_id,trade.recipient_id,offered,trade.id,date);
     await move(db,trade.recipient_id,trade.sender_id,requested,trade.id,date);
