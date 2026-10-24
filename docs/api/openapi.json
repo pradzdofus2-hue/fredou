@@ -438,7 +438,7 @@
           },
           "image": {
             "type": "string",
-            "pattern": "^/art/card-[1-9][0-9]*\\.svg$"
+            "pattern": "^/art/(?:card-[1-9][0-9]*\\.svg|dofus/[1-9][0-9]*\\.png)$"
           },
           "recycleValue": {
             "type": "integer",
