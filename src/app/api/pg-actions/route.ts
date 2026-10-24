@@ -1,3 +1,4 @@
+import { hostedDatabaseUnavailable } from '@/server/hosted-runtime';
 import { cookieValue, SESSION_COOKIE } from '@/server/auth';
 import { getPgSessionUser } from '@/server/postgres-auth';
 import { executePgSimpleAction } from '@/server/postgres-simple-actions';
@@ -9,6 +10,7 @@ export const dynamic='force-dynamic';
 
 /** Pilot endpoint, not the main game action endpoint yet. */
 export async function POST(request:Request):Promise<Response> {
+  if (hostedDatabaseUnavailable()) return json({error:'Le jeu PostgreSQL n’est pas prêt sur cet hébergement.'},503);
   if (process.env.PG_SIMPLE_ACTIONS_ENABLED !== 'true') {
     return json({error:'Actions PostgreSQL non activées.'},503);
   }
