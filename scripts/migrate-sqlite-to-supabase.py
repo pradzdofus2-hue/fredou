@@ -8,6 +8,7 @@ Works only with the tables created by the initialize_fredou_private_game_schema 
 """
 from __future__ import annotations
 import argparse
+from datetime import datetime, timezone
 import os
 import sqlite3
 import sys
@@ -30,6 +31,22 @@ def main():
     if not dbfile.is_file():
         sys.exit(f"SQLite introuvable : {dbfile}")
     sqlite = sqlite3.connect(f"file:{dbfile.as_posix()}?mode=ro", uri=True)
+    # A live SQLite database can be in WAL mode: do not just copy its .sqlite file.
+    # The backup API gives a consistent snapshot, including committed WAL entries.
+    snapshot = None
+    if args.apply:
+        backup_dir = dbfile.parent / "backups"
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        backup_path = backup_dir / f"fredou-before-supabase-{stamp}.sqlite"
+        if backup_path.exists():
+            sys.exit(f"Sauvegarde existe deja : {backup_path}")
+        with sqlite3.connect(str(backup_path)) as backup:
+            sqlite.backup(backup)
+        sqlite.close()
+        snapshot = backup_path
+        sqlite = sqlite3.connect(f"file:{snapshot.as_posix()}?mode=ro", uri=True)
+        print(f"SAUVEGARDE SQLITE : {snapshot}")
     counts = {}
     for table in TABLES:
         counts[table] = sqlite.execute(f'SELECT COUNT(*) FROM "{table}"').fetchone()[0]
