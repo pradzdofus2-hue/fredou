@@ -23,7 +23,8 @@
     "db:test:writes": "tsx scripts/test-postgres-writes.ts",
     "art:check": "tsx scripts/check-artwork.ts",
     "db:check:artwork": "tsx scripts/check-postgres-artwork.ts",
-    "deploy:check": "tsx scripts/check-deploy-config.ts"
+    "deploy:check": "tsx scripts/check-deploy-config.ts",
+    "preview:check": "tsx scripts/check-preview.ts"
   },
   "dependencies": {
     "next": "16.4.3",
