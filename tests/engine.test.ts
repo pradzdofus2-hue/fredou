@@ -205,3 +205,19 @@ test('idempotent seed reapplies central configuration without altering past ledg
   assert.deepEqual(afterState.ledger,before.ledger);
   assert.deepEqual(afterState.inventory,before.inventory);
 });
+
+
+test('guest activity feed excludes private economy and referrals while owners retain history',()=>{
+ const inserted=[
+  {id:randomUUID(),kind:'shop',message:'Achat privé de boosters.'},
+  {id:randomUUID(),kind:'referral',message:'Parrainage privé.'},
+  {id:randomUUID(),kind:'event',message:'Événement public.'}
+ ];
+ for(const activity of inserted)database.getDb().prepare('INSERT INTO activities(id,user_id,kind,message,created_at) VALUES(?,?,?,?,?)').run(activity.id,'fredou',activity.kind,activity.message,new Date().toISOString());
+ const guest=engine.getState(null).activities;
+ const owner=engine.getState('fredou').activities;
+ assert.ok(guest.some(a=>a.id===inserted[2].id),'Public event should remain visible');
+ assert.ok(!guest.some(a=>a.id===inserted[0].id||a.id===inserted[1].id),'Guest must not see private transactions');
+ assert.ok(owner.some(a=>a.id===inserted[0].id),'Owner should see own purchases');
+ assert.ok(owner.some(a=>a.id===inserted[1].id),'Owner should see own referral history');
+});
