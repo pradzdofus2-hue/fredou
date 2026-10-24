@@ -16,6 +16,7 @@ try {
     $env:DATABASE_URL = (New-Object System.Net.NetworkCredential('', $secure)).Password
     try {
         Run-Step 'Lecture Supabase' 'db:check:runtime'
+        Run-Step 'Illustrations du catalogue Supabase complet' 'db:check:artwork'
         Run-Step 'Ecritures Supabase et rollback' 'db:test:writes'
     }
     finally {
