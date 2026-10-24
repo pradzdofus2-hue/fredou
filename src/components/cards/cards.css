@@ -490,3 +490,16 @@
 .fc-card-reveal-trigger .fc-card-back-medallion { width: 85%; aspect-ratio: 1.5; border: none; border-radius: 12px; background: transparent; box-shadow: none; }
 .fc-card-reveal-trigger .fc-card-back-medallion img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 10px #000b); }
 .fc-card-reveal-trigger .fc-card-back-brand { margin-top: 7%; }
+
+/* KROSMORIA CARD BACK OFFICIAL */
+.fc-card-reveal .fc-card-reveal-trigger.card-back {
+  background: url('/branding/krosmoria-card-back.png') center / 100% 100% no-repeat !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+.fc-card-reveal-trigger .fc-card-back-corner,
+.fc-card-reveal-trigger .fc-card-back-medallion,
+.fc-card-reveal-trigger .fc-card-back-brand,
+.fc-card-reveal-trigger .fc-card-back-caption {
+  display: none !important;
+}
