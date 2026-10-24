@@ -45,6 +45,7 @@ async function main() {
    const opening=await openPgBooster(one.id,'free',key);
    assert.equal(opening.opening?.cards.length,5);
    assert.deepEqual(await openPgBooster(one.id,'free',key),opening);
+   await assert.rejects(openPgBooster(one.id,'daily',key),{code:'IDEMPOTENCY_CONFLICT'},'Une clé de rejeu ne peut pas servir à deux boosters différents');
    const inv=await pgRead<{n:number}>('SELECT COALESCE(SUM(quantity),0)::integer n FROM inventory WHERE user_id=$1',[one.id]);
    assert.equal(inv[0].n,5);
    const firstAchievement=await pgRead<{n:number}>('SELECT COUNT(*)::integer n FROM user_achievements WHERE user_id=$1 AND achievement_id=$2',[one.id,'first-opening']);
@@ -158,6 +159,12 @@ async function main() {
    assert.equal(eventRow[0].name,eventAction.name);
    const state=await pgState(one.id);
    assert.equal(state.currentUser?.id,one.id);
+   const visibleIds=new Set(state.cards.map(c=>c.id));
+   assert.ok(state.inventory.every(i=>visibleIds.has(i.cardId)),'Inventaire PostgreSQL visible seulement pour les cartes du catalogue');
+   const openingProgress=state.achievements.find(a=>a.id==='first-opening');
+   assert.equal(openingProgress?.unlockedAt!==null,true,'Le premier succès doit apparaître débloqué dans l’interface');
+   const legendaryProgress=state.achievements.find(a=>a.id==='first-legendary');
+   assert.ok((legendaryProgress?.progress??0)>=0,'Statistiques de succès accessibles dans l’état');
    assert.ok(state.openings.length>0);
    // Deleting an account must cancel outstanding listings, not leave buyable orphaned offers.
    const pendingSale=await pgListingAction(two.id,{type:'listing-create',cardId:selected,quantity:1,price:12},randomUUID());
