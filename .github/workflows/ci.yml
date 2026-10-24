@@ -9,8 +9,9 @@ permissions:
   contents: read
 jobs:
   verify:
+    name: TypeScript, unit, concurrency and production build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,5 +24,55 @@ jobs:
         run: npm run typecheck
       - name: Unit tests
         run: npm test
+      - name: Cross-process concurrency
+        run: npm run test:concurrency
       - name: Production build
         run: npm run build
+
+  browser:
+    name: Real browser end-to-end gameplay
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Install Chrome and system libraries
+        run: npx playwright install --with-deps chrome
+      - name: Build website
+        run: npm run build
+      - name: Playwright gameplay scenarios (disposable SQLite)
+        run: npm run test:e2e
+      - name: Upload browser failure report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fredou-browser-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  artwork:
+    name: Published card illustrations integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Seed isolated local catalogue
+        run: npm run db:seed
+        env:
+          DATABASE_PATH: data/ci-artwork.sqlite
+      - name: Check each card illustration in checkout
+        run: npm run art:check
+        env:
+          DATABASE_PATH: data/ci-artwork.sqlite
