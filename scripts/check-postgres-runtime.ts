@@ -17,6 +17,21 @@ async function main() {
     });
     if (counts.tables!==25 || counts.cards<100 || counts.boosters.length!==5 || counts.boosters.some(b=>b.rarities!==6))
       throw new Error('Catalogue incomplet ou probabilités de boosters impossibles');
+    // The game schema is private: no direct API reads/writes from browser roles.
+    const exposed=await pgTransaction(async db=>{
+      await db.query('SET TRANSACTION READ ONLY');
+      const result=await db.query<{table_name:string}>(`SELECT c.relname AS table_name
+        FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname='fredou' AND c.relkind IN ('r','p')
+          AND (has_table_privilege('anon',c.oid,'SELECT')
+            OR has_table_privilege('authenticated',c.oid,'SELECT')
+            OR has_table_privilege('anon',c.oid,'INSERT,UPDATE,DELETE')
+            OR has_table_privilege('authenticated',c.oid,'INSERT,UPDATE,DELETE'))
+        ORDER BY c.relname`);
+      return result.rows.map(x=>x.table_name);
+    });
+    if(exposed.length) throw new Error('Permissions directes inattendues pour anon/authenticated sur : '+exposed.join(', '));
+    console.log('Sécurité Supabase OK : aucune table privée accessible aux rôles navigateur.');
     // The same DTO builder used by /api/state; validates all SQL reads and field mappings.
     const guest=await pgState(null);
     if (guest.currentUser!==null || guest.inventory.length!==0 || guest.cards.length<100 || guest.boosters.length!==5)
