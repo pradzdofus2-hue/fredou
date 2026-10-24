@@ -18,6 +18,8 @@ export async function pgListingAction(userId:string, action:ListingAction, key:s
   const now=new Date().toISOString();
   let result:ActionResult;
   if(action.type==='listing-create') {
+   ensure(Number.isSafeInteger(action.quantity)&&action.quantity>=1&&action.quantity<=50,'VALIDATION_ERROR','Quantité invalide.',422);
+   ensure(Number.isSafeInteger(action.price)&&action.price>=1&&action.price<=100000000,'VALIDATION_ERROR','Prix invalide.',422);
    const card=await db.query('SELECT id FROM cards WHERE id=$1',[action.cardId]);
    ensure(card.rowCount===1,'NOT_FOUND','Carte introuvable.',404);
    const active=await db.query<{n:number}>("SELECT COUNT(*)::integer n FROM listings WHERE seller_id=$1 AND status='active'",[userId]);
