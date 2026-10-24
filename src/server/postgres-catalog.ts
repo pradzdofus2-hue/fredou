@@ -1,4 +1,3 @@
-import 'server-only';
 import { pgRead } from './postgres';
 import { HIDDEN_DUPLICATE_CARD_IDS } from './card-visibility';
 import type { Card, Series } from '../lib/contracts';
