@@ -20,6 +20,8 @@ async function main() {
    testIds.push(one.id,two.id);
    assert.equal(one.balance,300);
    assert.equal((await findOrCreateDiscordPlayer({discordId:one.discord_id!,username:'PG Test 1',avatar:null})).id,one.id);
+   const grants=await pgRead<{n:number}>('SELECT COUNT(*)::integer n FROM ledger WHERE user_id=$1 AND reason=$2',[one.id,'Bienvenue dans FREDOU COLLECTION']);
+   assert.equal(grants[0].n,1,'La connexion répétée ne doit pas doubler le bonus de bienvenue');
    // A fresh user must have exactly one welcome ledger entry and all five reserves.
    const welcome=await pgRead<{n:number}>('SELECT COUNT(*)::integer n FROM ledger WHERE user_id=$1',[one.id]);
    assert.equal(welcome[0].n,1);
