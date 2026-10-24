@@ -56,6 +56,15 @@ async function main() {
    assert.equal(sold[0].n,1);
    const owned=await pgRead<{n:number}>('SELECT quantity n FROM inventory WHERE user_id=$1 AND card_id=$2',[two.id,selected]);
    assert.equal(owned[0]?.n,1);
+   // Money must be transferred exactly once in both directions.
+   const buyerAfter=await pgRead<{balance:number}>('SELECT balance FROM users WHERE id=$1',[two.id]);
+   assert.equal(buyerAfter[0].balance,290);
+   const sellerAfter=await pgRead<{balance:number}>('SELECT balance FROM users WHERE id=$1',[one.id]);
+   assert.equal(sellerAfter[0].balance,75);
+   const saleLedgers=await pgRead<{user_id:string;amount:number}>('SELECT user_id,amount FROM ledger WHERE reference_id=$1 AND reason IN ($2,$3)',[listing.entityId,'Achat marché','Vente marché']);
+   assert.equal(saleLedgers.length,2);
+   assert.equal(saleLedgers.reduce((sum,x)=>sum+x.amount,0),0);
+   assert.deepEqual(new Set(saleLedgers.map(x=>x.user_id)),new Set([one.id,two.id]));
    // Two distinct cards with the same recycle value make a fair direct exchange.
    const swap=await pgRead<{id:string}>(
     'SELECT id FROM cards WHERE rarity=0 AND id<>$1 ORDER BY id LIMIT 2',[selected]);
