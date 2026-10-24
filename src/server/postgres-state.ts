@@ -49,7 +49,7 @@ export async function pgState(userId:string|null):Promise<StateResponse>{
   const currentUser:CurrentUser|null=currentRow?{...users.find(x=>x.id===currentRow.id)!,balance:currentRow.balance,role:currentRow.role,mode:currentRow.mode,preferences:{reducedMotion:!!currentRow.reduced_motion},referralCode:currentRow.referral_code,referredBy:currentRow.referred_by}:null;
   const rankings={} as Rankings;
   for(const metric of metrics)rankings[metric]=[...users].sort((a,b)=>b[metric]-a[metric]||a.joinedAt.localeCompare(b.joinedAt)||a.id.localeCompare(b.id)).map((u,i)=>({userId:u.id,rank:i+1,value:u[metric]}));
-  const inventory=currentUser?(await q<StateResponse['inventory'][number]>('SELECT card_id AS "cardId",quantity,favorite,first_obtained_at AS "firstObtainedAt",last_obtained_at AS "lastObtainedAt" FROM inventory WHERE user_id=$1 AND quantity>0 ORDER BY last_obtained_at DESC',[userId])).map(x=>({...x,favorite:!!x.favorite})):[];
+  const inventory=currentUser?(await q<StateResponse['inventory'][number]>('SELECT card_id AS "cardId",quantity,favorite,first_obtained_at AS "firstObtainedAt",last_obtained_at AS "lastObtainedAt" FROM inventory WHERE user_id=$1 AND quantity>0 AND NOT(card_id=ANY($2::text[])) ORDER BY last_obtained_at DESC',[userId,Array.from(HIDDEN_DUPLICATE_CARD_IDS)])).map(x=>({...x,favorite:!!x.favorite})):[];
   const openings=currentUser?(await q<{id:string;boosterId:string;createdAt:string;cards:string;shardsReward:number;pityTriggered:number}>('SELECT id,booster_id AS "boosterId",created_at AS "createdAt",cards,shards_reward AS "shardsReward",pity_triggered AS "pityTriggered" FROM openings WHERE user_id=$1 ORDER BY created_at DESC,id DESC LIMIT 200',[userId])).map(x=>({...x,cards:parse<Opening['cards']>(x.cards),pityTriggered:!!x.pityTriggered})):[];
   const ledger=currentUser?await q<StateResponse['ledger'][number]>('SELECT id,amount,balance_after AS "balanceAfter",reason,created_at AS "createdAt",reference_id AS "referenceId" FROM ledger WHERE user_id=$1 ORDER BY created_at DESC,id DESC LIMIT 200',[userId]):[];
   const listings=await q<StateResponse['listings'][number]>('SELECT id,COALESCE(seller_id,\'deleted\') AS "sellerId",card_id AS "cardId",quantity,price,status,buyer_id AS "buyerId",created_at AS "createdAt",completed_at AS "completedAt" FROM listings WHERE status=\'active\' OR seller_id=$1 OR buyer_id=$1 ORDER BY (status=\'active\') DESC,created_at DESC,id DESC LIMIT 500',[userId]);
@@ -72,8 +72,8 @@ export async function pgState(userId:string|null):Promise<StateResponse>{
    progress['first-opening']=progress['ten-openings']=openingCount;
    progress['ten-unique']=progress['fifty-unique']=currentUser.uniqueCards;
    progress['first-album']=currentUser.completedAlbums;
-   progress['first-legendary']=await count('SELECT COUNT(*)::text n FROM acquisitions a JOIN cards c ON c.id=a.card_id WHERE a.user_id=$1 AND c.rarity=4',userArgs);
-   progress['first-mythic']=await count('SELECT COUNT(*)::text n FROM acquisitions a JOIN cards c ON c.id=a.card_id WHERE a.user_id=$1 AND c.rarity=5',userArgs);
+   progress['first-legendary']=await count('SELECT COUNT(*)::text n FROM acquisitions a JOIN cards c ON c.id=a.card_id WHERE a.user_id=$1 AND c.rarity=4 AND NOT(c.id=ANY($2::text[]))',[userId,Array.from(HIDDEN_DUPLICATE_CARD_IDS)]);
+   progress['first-mythic']=await count('SELECT COUNT(*)::text n FROM acquisitions a JOIN cards c ON c.id=a.card_id WHERE a.user_id=$1 AND c.rarity=5 AND NOT(c.id=ANY($2::text[]))',[userId,Array.from(HIDDEN_DUPLICATE_CARD_IDS)]);
    progress['first-recycle']=await count("SELECT COUNT(*)::text n FROM activities WHERE user_id=$1 AND kind='recycle'",userArgs);
    progress['first-transaction']=await count("SELECT COUNT(*)::text n FROM activities WHERE user_id=$1 AND kind='market'",userArgs);
   }
