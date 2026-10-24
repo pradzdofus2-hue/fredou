@@ -141,6 +141,33 @@ function OpeningExperience({ booster, opening, replay, close, again }: Encounter
       void audio.play().catch(() => {});
     } catch { /* Optional sound must never block rewards. */ }
   };
+  // A flip emits one sound, chosen from the server-assigned card rarity.
+  const playedFlips = useRef(new Set<number>());
+  useEffect(() => {
+    const index = animation.flipping;
+    if (stage !== 'reveal' || index === null || playedFlips.current.has(index) || allRevealSoundPlayed.current || animation.automatic) return;
+    playedFlips.current.add(index);
+    const rarity = cards[index]?.card.rarity;
+    const files = ['commune', 'peu-commune', 'rare', 'epique', 'legendaire', 'mythique'];
+    const name = typeof rarity === 'number' ? files[rarity] : undefined;
+    if (!name) return;
+    try {
+      flipAudio.current?.pause();
+      const audio = new Audio('/sounds/' + name + '.wav');
+      audio.volume = 0.85;
+      flipAudio.current = audio;
+      // Keep existing audio working until the original WAV assets are uploaded.
+      const fallback = () => {
+        if (flipAudio.current !== audio) return;
+        const old = new Audio('/sounds/' + name + '.ogg');
+        old.volume = 0.65;
+        flipAudio.current = old;
+        void old.play().catch(() => {});
+      };
+      audio.addEventListener('error', fallback, { once: true });
+      void audio.play().catch(() => {});
+    } catch { /* Sound is optional and never blocks the reveal. */ }
+  }, [animation.flipping, stage, animation.automatic]);
   useEffect(() => () => { flipAudio.current?.pause(); }, []);
 
   useEffect(() => {
