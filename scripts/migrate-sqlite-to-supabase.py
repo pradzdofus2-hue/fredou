@@ -71,13 +71,14 @@ def main():
                                 break
                             cur.executemany(statement, batch)
                     print(f"Import : {table} ({counts[table]} lignes)")
-                for table in TABLES:
-                    cur.execute(
-                        sql.SQL("SELECT COUNT(*) FROM {}.{}").format(
-                            sql.Identifier("fredou"), sql.Identifier(table)))
-                    n = cur.fetchone()[0]
-                    if n != counts[table]:
-                        raise RuntimeError(f"Verification echouee pour {table}: {n} != {counts[table]}")
+                with pg.cursor() as verify:
+                    for table in TABLES:
+                        verify.execute(
+                            sql.SQL("SELECT COUNT(*) FROM {}.{}").format(
+                                sql.Identifier("fredou"), sql.Identifier(table)))
+                        n = verify.fetchone()[0]
+                        if n != counts[table]:
+                            raise RuntimeError(f"Verification echouee pour {table}: {n} != {counts[table]}")
         print("Import termine. Toutes les quantites verifiees.")
     sqlite.close()
 
