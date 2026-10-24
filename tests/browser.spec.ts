@@ -51,12 +51,12 @@ test('real booster opening reveals five server-awarded cards and persists on rel
   const dialog=page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   if(await dialog.getByRole('button',{name:'Déchirer le booster'}).count()) await dialog.getByRole('button',{name:'Déchirer le booster'}).click({force:true});
-  await dialog.getByRole('button',{name:'Révéler la carte 1',exact:true}).click();
-  await dialog.getByRole('button',{name:'Tout révéler',exact:true}).click();
-  await expect(dialog.locator('.is-revealed')).toHaveCount(5);
-  await dialog.getByRole('button',{name:'Découvrir le bilan',exact:true}).click();
-  await expect(dialog.locator('.opening-reward')).toContainText('Collection mise à jour');
-  await dialog.getByRole('button',{name:'Retour à l’aventure',exact:true}).click();
+  // Reduced motion intentionally skips the card-flipping animation and opens the summary.
+  await expect(dialog.locator('.fc-opening-reward')).toContainText('Collection mise à jour');
+  const afterOpening=await state(page);
+  expect(afterOpening.openings[0]?.cards).toHaveLength(5);
+  await dialog.getByRole('button',{name:'Retour aux boosters',exact:true}).click();
+  await expect(dialog).toHaveCount(0);
   await page.reload();
   await expect(page.locator('.fc-booster-history-row').first()).toContainText('Prisme céleste');
 });
