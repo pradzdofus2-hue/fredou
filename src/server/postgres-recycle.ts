@@ -1,3 +1,4 @@
+import {awardPgAchievements} from './postgres-achievements';
 import {createHash,randomUUID} from 'node:crypto';
 import type {Action,ActionResult} from '../lib/contracts';
 import {ensure} from './errors';
@@ -31,6 +32,7 @@ export async function pgRecycle(userId:string,action:Recycling,key:string):Promi
   const result:ActionResult={type:'recycle',message:`${quantity} doublons recyclés. Un exemplaire de chaque carte est conservé.`,amount,quantity};
   await db.query('INSERT INTO activities(id,user_id,kind,message,created_at) VALUES($1,$2,$3,$4,$5)',
    [randomUUID(),userId,'recycle',result.message,date]);
+  await awardPgAchievements(db,userId);
   await db.query('INSERT INTO idempotency(user_id,key,action_hash,response,created_at) VALUES($1,$2,$3,$4,$5)',
    [userId,key,digest,JSON.stringify(result),date]);
   return result;
