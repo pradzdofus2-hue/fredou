@@ -32,5 +32,5 @@ function buildState(userId:string|null):StateResponse {
     news:all<NewsItem>('SELECT id,title,body,kind,published_at publishedAt FROM news ORDER BY published_at DESC LIMIT 100'),rankings,
     priceHistory:all<PricePoint>('SELECT card_id cardId,unit_price unitPrice,quantity,sold_at soldAt FROM price_history ORDER BY sold_at DESC LIMIT 500'),
     acquisitions:currentUser?all<Acquisition>('SELECT id,card_id cardId,quantity,source,created_at createdAt,reference_id referenceId FROM acquisitions WHERE user_id=? ORDER BY rowid DESC LIMIT 500',userId!):[],
-    activities:all<Activity>('SELECT id,user_id userId,kind,message,created_at createdAt FROM activities ORDER BY rowid DESC LIMIT 100'),config:GAME_CONFIG};
+    activities:all<Activity>("SELECT id,user_id userId,kind,message,created_at createdAt FROM activities WHERE kind IN ('opening','achievement','market','trade','event') OR user_id=? ORDER BY rowid DESC LIMIT 100",userId||''),config:GAME_CONFIG};
 }
