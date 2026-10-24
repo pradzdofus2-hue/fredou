@@ -7,6 +7,12 @@ Le workflow `.github/workflows/ci.yml` vérifie TypeScript, les tests unitaires 
 Sous Windows : une fois tous les changements récupérés, lancer `powershell -ExecutionPolicy Bypass -File .\\scripts\\VALIDATION-FINALE.ps1`. Cette commande regroupe typecheck, tests, build, contrôle des images et tests PostgreSQL avec une seule saisie masquée de l'URI.
 Sur le poste local, lancer `npm run db:check:runtime`, `npm run db:check:artwork` et `npm run db:test:writes` avec **la même** variable privée `DATABASE_URL` issue du Session Pooler Supabase. Ne jamais coller l'URI dans GitHub ou dans un journal partagé. Les tests d'écriture utilisent une transaction annulée à la fin, mais nécessitent encore une validation d'exécution réussie.
 
+## Contrôle PostgreSQL GitHub dédié (manuel)
+Le workflow `.github/workflows/postgres-release.yml` n'est **pas exécuté sur les push** : le déclencher manuellement dans **Actions → FREDOU PostgreSQL Release Validation → Run workflow**, sur la branche `feature/dofus-catalogue`.
+Il nécessite un secret GitHub Actions `FREDOU_TEST_DATABASE_URL` avec une URI de connexion PostgreSQL Session Pooler de l'environnement de validation. **Ne jamais saisir cette URI dans un commit, une issue, une capture ou un chat.**
+Il lance la lecture du catalogue, le contrôle des 2 467 illustrations référencées par Supabase, puis le scénario complet de transactions avec annulation. Les comptes et écritures temporaires sont censés être annulés ; l'absence de lignes résiduelles est également vérifiée après le test.
+⚠️ Tant que ce workflow n'a pas réussi avec l'environnement visé, **les écritures PostgreSQL ne sont pas validées**. Préférer une base de préproduction isolée et non une base qui héberge déjà des joueurs.
+
 ## Assets
 L'audit local `npm run art:check` a été rapporté comme réussi (2467 fichiers uniques, aucun manquant). Le contrôle GitHub Actions des images du catalogue de démonstration est aussi passé (exécutions #73 et #74), mais ne vérifie pas encore toutes les 4833 cartes du catalogue Supabase. Vérifier le catalogue intégral et les réponses HTTP des images sur la préproduction avant ouverture.
 
@@ -21,7 +27,7 @@ L'audit local `npm run art:check` a été rapporté comme réussi (2467 fichiers
 - Tester le flux Discord, l'état connecté, les boosters, le marché, les échanges, les images et les liens de navigation sur l'URL de préproduction.
 
 ## Blocages connus
-1. Aucun résultat confirmé de `db:test:writes`.
+1. Aucun résultat confirmé de `db:test:writes` sur une base PostgreSQL réelle. Déclencher manuellement le workflow de validation dédié.
 2. Vérification de toutes les illustrations du catalogue Supabase et de leur livraison depuis le site public encore nécessaire.
 3. Certaines actions API sont encore explicitement indisponibles en mode PostgreSQL.
 4. Playwright local/CI validé, mais aucune validation E2E complète sur le déploiement Vercel.
