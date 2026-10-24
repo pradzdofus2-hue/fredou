@@ -3,6 +3,7 @@ import {cookieValue,SESSION_COOKIE} from '@/server/auth';
 import {getPgSessionUser} from '@/server/postgres-auth';
 import {pgTransaction} from '@/server/postgres';
 import {errorResponse,HttpError,json,validateOrigin} from '@/server/http';
+import {HIDDEN_DUPLICATE_CARD_IDS} from '@/server/card-visibility';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const titles=['Collectionneur','Explorateur','Chasseur de mythiques','Maître des cartes'];
@@ -52,7 +53,7 @@ export async function POST(request:Request){
     await db.query('INSERT INTO ledger(id,user_id,amount,balance_after,reason,created_at,reference_id) VALUES($1,$2,$3,$4,$5,$6,$7)',[randomUUID(),id,reward,balance,'season_reward',new Date().toISOString(),key+'-'+level]);
    }else if(body.action==='album'){
     if(typeof body.seriesId!=='string'||body.seriesId.length>100||![25,50,75,100].includes(body.milestone))throw new HttpError('VALIDATION_ERROR','Palier invalide.',422);
-    const counted=(await db.query<{total:string;owned:string}>('SELECT (SELECT COUNT(*)::text FROM cards WHERE series_id=$1) total,(SELECT COUNT(*)::text FROM inventory i JOIN cards c ON c.id=i.card_id WHERE i.user_id=$2 AND i.quantity>0 AND c.series_id=$1) owned',[body.seriesId,id])).rows[0];
+    const counted=(await db.query<{total:string;owned:string}>('SELECT (SELECT COUNT(*)::text FROM cards WHERE series_id=$1 AND NOT(id=ANY($3::text[]))) total,(SELECT COUNT(*)::text FROM inventory i JOIN cards c ON c.id=i.card_id WHERE i.user_id=$2 AND i.quantity>0 AND c.series_id=$1 AND NOT(c.id=ANY($3::text[]))) owned',[body.seriesId,id,Array.from(HIDDEN_DUPLICATE_CARD_IDS)])).rows[0];
     if(!counted||Number(counted.total)<1||100*Number(counted.owned)/Number(counted.total)<body.milestone)throw new HttpError('VALIDATION_ERROR','Palier non atteint.',422);
     const claim=await db.query('INSERT INTO album_milestone_claims(user_id,series_id,milestone) VALUES($1,$2,$3) ON CONFLICT DO NOTHING RETURNING milestone',[id,body.seriesId,body.milestone]);
     if(!claim.rowCount)throw new HttpError('VALIDATION_ERROR','Récompense déjà réclamée.',409);
