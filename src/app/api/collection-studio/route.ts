@@ -15,7 +15,8 @@ async function snapshot(db:import('pg').PoolClient,id:string){
  const key=season();
  const xp=Number((await db.query<{n:string}>('SELECT COUNT(*)::text n FROM openings WHERE user_id=$1 AND created_at >= $2 AND created_at < $3',[id,key+'-01',new Date(Date.UTC(Number(key.slice(0,4)),Number(key.slice(5,7)),1)).toISOString().slice(0,10)])).rows[0]?.n||0);
  const claimed=(await db.query<{level:number}>('SELECT level FROM season_claims WHERE user_id=$1 AND season_key=$2',[id,key])).rows.map(x=>x.level);
- return {wishlist,cosmetic,season:{key,xp,level:Math.min(30,Math.floor(xp/3)),claimed},titles,banners};
+ const albumClaims=(await db.query<{series_id:string;milestone:number}>('SELECT series_id,milestone FROM album_milestone_claims WHERE user_id=$1',[id])).rows;
+ return {wishlist,cosmetic,season:{key,xp,level:Math.min(30,Math.floor(xp/3)),claimed},albumClaims,titles,banners};
 }
 export async function GET(request:Request){try{
  const player=new URL(request.url).searchParams.get('player');
@@ -49,6 +50,15 @@ export async function POST(request:Request){
     const reward=50+level*10;
     const balance=(await db.query<{balance:number}>('UPDATE users SET balance=balance+$1 WHERE id=$2 RETURNING balance',[reward,id])).rows[0].balance;
     await db.query('INSERT INTO ledger(id,user_id,amount,balance_after,reason,created_at,reference_id) VALUES($1,$2,$3,$4,$5,$6,$7)',[randomUUID(),id,reward,balance,'season_reward',new Date().toISOString(),key+'-'+level]);
+   }else if(body.action==='album'){
+    if(typeof body.seriesId!=='string'||body.seriesId.length>100||![25,50,75,100].includes(body.milestone))throw new HttpError('VALIDATION_ERROR','Palier invalide.',422);
+    const counted=(await db.query<{total:string;owned:string}>('SELECT (SELECT COUNT(*)::text FROM cards WHERE series_id=$1) total,(SELECT COUNT(*)::text FROM inventory i JOIN cards c ON c.id=i.card_id WHERE i.user_id=$2 AND i.quantity>0 AND c.series_id=$1) owned',[body.seriesId,id])).rows[0];
+    if(!counted||Number(counted.total)<1||100*Number(counted.owned)/Number(counted.total)<body.milestone)throw new HttpError('VALIDATION_ERROR','Palier non atteint.',422);
+    const claim=await db.query('INSERT INTO album_milestone_claims(user_id,series_id,milestone) VALUES($1,$2,$3) ON CONFLICT DO NOTHING RETURNING milestone',[id,body.seriesId,body.milestone]);
+    if(!claim.rowCount)throw new HttpError('VALIDATION_ERROR','Récompense déjà réclamée.',409);
+    const reward=({25:200,50:500,75:1000,100:2000} as Record<number,number>)[body.milestone];
+    const balance=(await db.query<{balance:number}>('UPDATE users SET balance=balance+$1 WHERE id=$2 RETURNING balance',[reward,id])).rows[0].balance;
+    await db.query('INSERT INTO ledger(id,user_id,amount,balance_after,reason,created_at,reference_id) VALUES($1,$2,$3,$4,$5,$6,$7)',[randomUUID(),id,reward,balance,'album_milestone',new Date().toISOString(),body.seriesId+'-'+body.milestone]);
    }else if(body.action==='forge'){
     if(typeof body.cardId!=='string'||body.cardId.length>100)throw new HttpError('VALIDATION_ERROR','Carte invalide.',422);
     const card=(await db.query<{rarity:number}>('SELECT rarity FROM cards WHERE id=$1',[body.cardId])).rows[0];
