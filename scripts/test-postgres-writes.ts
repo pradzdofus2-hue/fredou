@@ -8,14 +8,16 @@ import { buyPgBooster } from '../src/server/postgres-booster-purchases';
 import { pgListingAction } from '../src/server/postgres-listings';
 import { pgBuyListing } from '../src/server/postgres-market-buy';
 import { pgState } from '../src/server/postgres-state';
+import { pgTradeAction } from '../src/server/postgres-trades';
 
 async function main() {
  if (!process.env.DATABASE_URL && !process.env.SUPABASE_DB_URL) throw Error('URI PostgreSQL requise.');
- const countsBefore=await pgRead<{n:number}>('SELECT COUNT(*)::integer n FROM users');
+ const testIds:string[]=[];
  try {
   await pgRollbackTest(async()=>{
    const one=await findOrCreateDiscordPlayer({discordId:'991'+String(Date.now()).padStart(20,'0'),username:'PG Test 1',avatar:null});
    const two=await findOrCreateDiscordPlayer({discordId:'992'+String(Date.now()).padStart(20,'0'),username:'PG Test 2',avatar:null});
+   testIds.push(one.id,two.id);
    assert.equal(one.balance,300);
    assert.equal((await findOrCreateDiscordPlayer({discordId:one.discord_id!,username:'PG Test 1',avatar:null})).id,one.id);
    const key=randomUUID();
@@ -33,13 +35,31 @@ async function main() {
    assert.equal(paid.amount,10);
    const owned=await pgRead<{n:number}>('SELECT quantity n FROM inventory WHERE user_id=$1 AND card_id=$2',[two.id,selected]);
    assert.equal(owned[0]?.n,1);
+   // Two distinct cards with the same recycle value make a fair direct exchange.
+   const swap=await pgRead<{id:string}>(
+    'SELECT id FROM cards WHERE rarity=0 AND id<>$1 ORDER BY id LIMIT 2',[selected]);
+   assert.equal(swap.length,2);
+   const date=new Date().toISOString();
+   await pgRead('INSERT INTO inventory(user_id,card_id,quantity,favorite,first_obtained_at,last_obtained_at) VALUES($1,$2,1,0,$3,$3) ON CONFLICT(user_id,card_id) DO UPDATE SET quantity=inventory.quantity+1',
+    [one.id,swap[0].id,date]);
+   await pgRead('INSERT INTO inventory(user_id,card_id,quantity,favorite,first_obtained_at,last_obtained_at) VALUES($1,$2,1,0,$3,$3) ON CONFLICT(user_id,card_id) DO UPDATE SET quantity=inventory.quantity+1',
+    [two.id,swap[1].id,date]);
+   const trade=await pgTradeAction(one.id,{type:'trade-create',recipientId:two.id,offered:[{cardId:swap[0].id,quantity:1}],requested:[{cardId:swap[1].id,quantity:1}]},randomUUID());
+   assert.ok(trade.entityId);
+   const accepted=await pgTradeAction(two.id,{type:'trade-respond',tradeId:trade.entityId!,decision:'accept'},randomUUID());
+   assert.equal(accepted.type,'trade-respond');
+   const traded=await pgRead<{user_id:string;card_id:string;quantity:number}>(
+    'SELECT user_id,card_id,quantity FROM inventory WHERE (user_id=$1 AND card_id=$3) OR (user_id=$2 AND card_id=$4)',
+    [one.id,two.id,swap[1].id,swap[0].id]);
+   assert.equal(traded.length,2);
+   assert.ok(traded.every(x=>x.quantity>=1));
    const state=await pgState(one.id);
    assert.equal(state.currentUser?.id,one.id);
    assert.ok(state.openings.length>0);
-   console.log('PG WRITE OK : comptes, ouverture/rejeu, achat booster, vente, inventaire, état joueur.');
+   console.log('PG WRITE OK : comptes, ouverture/rejeu, achat booster, marché, échange, inventaire, état joueur.');
   });
-  const countsAfter=await pgRead<{n:number}>('SELECT COUNT(*)::integer n FROM users');
-  assert.equal(countsAfter[0].n,countsBefore[0].n,'Rollback incomplet');
+  const remaining=await pgRead<{id:string}>('SELECT id FROM users WHERE id=ANY($1::text[])',[testIds]);
+  assert.equal(remaining.length,0,'Rollback incomplet : comptes temporaires présents');
   console.log('ROLLBACK OK : aucun compte de test conservé.');
  } finally {await pgPool().end();}
 }
