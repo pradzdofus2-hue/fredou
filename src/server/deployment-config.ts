@@ -1,5 +1,5 @@
 /** Pure production preflight; never return raw secrets or database credentials. */
-export function validateDeploymentConfig(env:NodeJS.ProcessEnv):string[]{
+export function validateDeploymentConfig(env:Record<string,string|undefined>):string[]{
  const errors:string[]=[];
  const required=['APP_URL','DATABASE_URL','DISCORD_CLIENT_ID','DISCORD_CLIENT_SECRET'] as const;
  const missing=required.filter(name=>!env[name]?.trim());
