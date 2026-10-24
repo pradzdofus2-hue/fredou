@@ -1,4 +1,3 @@
-import 'server-only';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { appOrigin, HttpError } from './http';
