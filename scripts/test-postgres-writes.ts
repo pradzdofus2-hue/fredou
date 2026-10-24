@@ -79,6 +79,9 @@ async function main() {
    assert.equal(saleLedgers.length,2);
    assert.equal(saleLedgers.reduce((sum,x)=>sum+x.amount,0),0);
    assert.deepEqual(new Set(saleLedgers.map(x=>x.user_id)),new Set([one.id,two.id]));
+   const marketAchievements=await pgRead<{user_id:string;n:number}>("SELECT user_id,COUNT(*)::integer n FROM user_achievements WHERE user_id=ANY($1::text[]) AND achievement_id='first-transaction' GROUP BY user_id",[[one.id,two.id]]);
+   assert.equal(marketAchievements.length,2,'Acheteur et vendeur doivent débloquer le succès marché');
+   assert.ok(marketAchievements.every(x=>x.n===1),'Succès marché attribué une seule fois');
    // Two distinct cards with the same recycle value make a fair direct exchange.
    const swap=await pgRead<{id:string}>(
     'SELECT id FROM cards WHERE rarity=0 AND id<>$1 ORDER BY id LIMIT 2',[selected]);
@@ -105,6 +108,8 @@ async function main() {
    assert.equal(recycle.quantity,2);
    const afterRecycling=await pgRead<{quantity:number}>('SELECT quantity FROM inventory WHERE user_id=$1 AND card_id=$2',[one.id,swap[1].id]);
    assert.equal(afterRecycling[0].quantity,1);
+   const recycleAchievement=await pgRead<{n:number}>("SELECT COUNT(*)::integer n FROM user_achievements WHERE user_id=$1 AND achievement_id='first-recycle'",[one.id]);
+   assert.equal(recycleAchievement[0].n,1,'Le recyclage doit débloquer son succès');
    // A referral is registered once, and subsequent attempts must not overwrite it.
    const ref=await pgRead<{referral_code:string}>('SELECT referral_code FROM users WHERE id=$1',[two.id]);
    const referral=await pgReferral(one.id,{type:'referral',code:ref[0].referral_code},randomUUID());
