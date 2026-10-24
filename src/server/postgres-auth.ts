@@ -24,17 +24,17 @@ export async function findOrCreateDiscordPlayer(profile: {
     const userId = randomUUID();
     const ref = 'FR-' + randomBytes(10).toString('hex').toUpperCase();
     const date = new Date().toISOString();
-    const { rows } = await client.query<PgPlayer>(
+    const { rows } = await client.query<PgPlayer & {created_now:boolean}>(
       `INSERT INTO users(id,username,avatar,discord_id,mode,role,balance,referral_code,created_at)
        VALUES($1,$2,$3,$4,'discord','player',300,$5,$6)
        ON CONFLICT(discord_id) DO UPDATE SET username=EXCLUDED.username, avatar=EXCLUDED.avatar
-       RETURNING id,username,avatar,discord_id,balance`,
+       RETURNING id,username,avatar,discord_id,balance,(xmax = 0) AS created_now`,
       [userId, profile.username, profile.avatar, profile.discordId, ref, date]
     );
     const player = rows[0];
     if (!player) throw new Error('FREDOU_USER_CREATE_FAILED');
     // Insert initial grant only for the new row, distinguished by the generated ID.
-    if (player.id === userId) {
+    if (player.created_now) {
       await client.query(
         'INSERT INTO ledger(id,user_id,amount,balance_after,reason,created_at,reference_id) VALUES($1,$2,300,300,$3,$4,NULL)',
         [randomUUID(), userId, 'Bienvenue dans FREDOU COLLECTION', date]
@@ -45,7 +45,7 @@ export async function findOrCreateDiscordPlayer(profile: {
         [userId, date]
       );
     }
-    return player;
+    return {id:player.id,username:player.username,avatar:player.avatar,discord_id:player.discord_id,balance:player.balance};
   });
 }
 
