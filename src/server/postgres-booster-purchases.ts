@@ -1,4 +1,3 @@
-import 'server-only';
 import { createHash, randomUUID } from 'node:crypto';
 import { pgTransaction } from './postgres';
 import { ensure } from './errors';
