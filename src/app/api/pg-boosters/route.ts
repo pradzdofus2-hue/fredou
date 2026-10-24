@@ -1,6 +1,7 @@
 import { cookieValue, SESSION_COOKIE } from '@/server/auth';
 import { getPgSessionUser } from '@/server/postgres-auth';
 import { openPgBooster } from '@/server/postgres-boosters';
+import { buyPgBooster } from '@/server/postgres-booster-purchases';
 import { parseAction } from '@/server/validation';
 import { errorResponse, HttpError, json, rateLimit, readJsonBody, validateIdempotencyKey, validateOrigin } from '@/server/http';
 
@@ -18,8 +19,8 @@ export async function POST(request:Request):Promise<Response>{
     if(!userId)throw new HttpError('AUTH_REQUIRED','Connectez-vous avec Discord.',401);
     rateLimit(userId);
     const action=parseAction(await readJsonBody(request));
-    if(action.type!=='open')
-      throw new HttpError('VALIDATION_ERROR','Seule ouverture est prise en charge.',422);
-    return json({result:await openPgBooster(userId,action.boosterId,key)});
+    if(action.type==='open') return json({result:await openPgBooster(userId,action.boosterId,key)});
+    if(action.type==='buy-booster') return json({result:await buyPgBooster(userId,action.boosterId,action.quantity,key)});
+    throw new HttpError('VALIDATION_ERROR','Action booster non prise en charge.',422);
   }catch(error){return errorResponse(error);}
 }
