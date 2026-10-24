@@ -6,6 +6,9 @@
  * Requires DATABASE_URL and the 'pg' dependency; call from server-only code.
  */
 import { Pool, type PoolClient, type QueryResultRow } from 'pg';
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+const testTransaction = new AsyncLocalStorage<PoolClient>();
 
 const globalPools = globalThis as typeof globalThis & { fredouPostgresPool?: Pool };
 
@@ -39,6 +42,8 @@ export async function pgOne<T extends QueryResultRow>(query: string, params: unk
 
 /** One client throughout the transaction; rolls back on every failure. */
 export async function pgTransaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
+  const borrowed = testTransaction.getStore();
+  if (borrowed) return callback(borrowed);
   const client = await pgPool().connect();
   try {
     await client.query('BEGIN');
@@ -57,4 +62,19 @@ export async function pgTransaction<T>(callback: (client: PoolClient) => Promise
 /** Restrict DB namespace to the private game schema for ordinary reads. */
 export async function pgRead<T extends QueryResultRow>(query: string, params: unknown[] = []): Promise<T[]> {
   return pgTransaction(async (client) => (await client.query<T>(query, params)).rows);
+}
+
+/** Execute integration checks in one database transaction, always rolled back.
+ * This API should only be called from trusted server-side test scripts.
+ */
+export async function pgRollbackTest<T>(callback: () => Promise<T>): Promise<T> {
+  const client = await pgPool().connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SET LOCAL search_path TO fredou, public');
+    const result = await testTransaction.run(client, callback);
+    return result;
+  } finally {
+    try { await client.query('ROLLBACK'); } finally { client.release(); }
+  }
 }
