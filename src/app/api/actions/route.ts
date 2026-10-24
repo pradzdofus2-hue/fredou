@@ -1,3 +1,4 @@
+import { hostedDatabaseUnavailable } from '@/server/hosted-runtime';
 import { deletePgAccount } from '@/server/postgres-account-delete';
 import { pgSaveEvent } from '@/server/postgres-events';
 import { pgRecycle } from '@/server/postgres-recycle';
@@ -17,6 +18,7 @@ import { errorResponse, HttpError, json, rateLimit, readJsonBody, validateIdempo
 import type { ActionResponse } from '@/lib/contracts';
 export const runtime = 'nodejs';
 export async function POST(request: Request) {
+  if (hostedDatabaseUnavailable()) return json({error:'Le jeu PostgreSQL n’est pas prêt sur cet hébergement.'},503);
   try {
     validateOrigin(request);
     const key=validateIdempotencyKey(request.headers.get('Idempotency-Key'));
