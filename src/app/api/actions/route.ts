@@ -1,3 +1,4 @@
+import { pgSaveEvent } from '@/server/postgres-events';
 import { pgRecycle } from '@/server/postgres-recycle';
 import { pgReferral } from '@/server/postgres-referral';
 import { pgTradeAction } from '@/server/postgres-trades';
@@ -31,10 +32,11 @@ export async function POST(request: Request) {
         response.headers.append('Set-Cookie','fredou_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'+(process.env.APP_URL?.startsWith('https:')?'; Secure':''));
         return response;
       }
-      const supported=pgAction.type==='open'||pgAction.type==='buy-booster'||pgAction.type==='favorite'||pgAction.type==='preferences'||pgAction.type==='listing-create'||pgAction.type==='listing-cancel'||pgAction.type==='listing-buy'||pgAction.type==='trade-create'||pgAction.type==='trade-respond'||pgAction.type==='recycle'||pgAction.type==='referral';
+      const supported=pgAction.type==='open'||pgAction.type==='buy-booster'||pgAction.type==='favorite'||pgAction.type==='preferences'||pgAction.type==='listing-create'||pgAction.type==='listing-cancel'||pgAction.type==='listing-buy'||pgAction.type==='trade-create'||pgAction.type==='trade-respond'||pgAction.type==='recycle'||pgAction.type==='referral'||pgAction.type==='event-save';
       if (!supported) throw new HttpError('UNAVAILABLE','Cette fonction est en cours de migration PostgreSQL.',503);
       if (process.env.PG_GAME_ACTIONS_ENABLED !== 'true') return json({error:'Actions PostgreSQL non activées.'},503);
-      const result=pgAction.type==='recycle' ? await pgRecycle(pgUser,pgAction,key)
+      const result=pgAction.type==='event-save' ? await pgSaveEvent(pgUser,pgAction,key)
+        : pgAction.type==='recycle' ? await pgRecycle(pgUser,pgAction,key)
         : pgAction.type==='referral' ? await pgReferral(pgUser,pgAction,key)
         : pgAction.type==='open' ? await openPgBooster(pgUser,pgAction.boosterId,key)
         : pgAction.type==='buy-booster' ? await buyPgBooster(pgUser,pgAction.boosterId,pgAction.quantity,key)
