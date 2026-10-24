@@ -1,0 +1,28 @@
+# FREDOU — Checklist de livraison Vercel
+
+## Qualité automatique
+Le workflow `.github/workflows/ci.yml` lance `npm ci`, `npm run typecheck`, `npm test`, `npm run build` après chaque push. Consulter l'onglet **Actions** de GitHub ; ne pas confondre « workflow créé » et « workflow réussi ».
+
+## Validation fonctionnelle avant activation (une seule session)
+Sur le poste local, lancer `npm run db:check:runtime` et `npm run db:test:writes` avec **la même** variable privée `DATABASE_URL` issue du Session Pooler Supabase. Ne jamais coller l'URI dans GitHub ou dans un journal partagé. Les tests d'écriture utilisent une transaction annulée à la fin, mais nécessitent encore une validation d'exécution réussie.
+
+## Assets
+L'audit local `npm run art:check` a été rapporté comme réussi (2467 fichiers uniques, aucun manquant). Il ne prouve pas que ces 2467 fichiers ont été poussés sur GitHub. Contrôler le dépôt et les réponses HTTP des assets sur la préproduction avant ouverture du site.
+
+## Vercel (avant publication)
+- Relier le projet Vercel `fredouu` au dépôt GitHub `pradzdofus2-hue/fredou`.
+- Déployer d'abord une préproduction depuis `feature/dofus-catalogue`, puis tester avant toute promotion vers la production.
+- Saisir les variables **privées** `DATABASE_URL`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, ainsi que `APP_URL` en HTTPS.
+- Configurer la redirection Discord : `https://DOMAINE/api/auth/discord/callback`. Ajouter cette même URL dans le portail développeur Discord.
+- Garder `PG_AUTH_ENABLED`, `PG_STATE_ENABLED` et `PG_GAME_ACTIONS_ENABLED` à `false` tant que le test d'écriture n'est pas passé et que les actions non migrées ne sont pas traitées. Les basculer ensemble uniquement après audit complet des endpoints.
+- Ne jamais définir `LOCAL_DEV_MODE=true` en production.
+- Vérifier la configuration avec `npm run deploy:check` dans un environnement muni des variables de production, **avant** d'activer les fonctionnalités.
+- Tester le flux Discord, l'état connecté, les boosters, le marché, les échanges, les images et les liens de navigation sur l'URL de préproduction.
+
+## Blocages connus
+1. Aucun résultat confirmé de `db:test:writes`.
+2. Présence des illustrations dans le dépôt/déploiement non confirmée.
+3. Certaines actions API sont encore explicitement indisponibles en mode PostgreSQL.
+4. Aucune validation E2E complète sur le déploiement Vercel.
+
+**Ne pas considérer le projet prêt pour un lancement public tant que ces points restent ouverts.**
