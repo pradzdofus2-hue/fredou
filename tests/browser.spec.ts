@@ -57,7 +57,11 @@ test('real booster opening reveals five server-awarded cards and persists on rel
   await dialog.getByRole('button',{name:'Retour aux boosters',exact:true}).click();
   await expect(dialog).toHaveCount(0);
   await page.reload();
-  await expect(page.locator('.fc-booster-history-row').first()).toContainText('Prisme céleste');
+  // Assert the exact server-assigned opening, not a hard-coded demo booster name.
+  const savedOpening=afterOpening.openings[0];
+  const savedBooster=afterOpening.boosters.find(b=>b.id===savedOpening.boosterId);
+  expect(savedBooster).toBeTruthy();
+  await expect(page.locator('.fc-booster-history-row').first()).toContainText(savedBooster!.name);
 });
 test('market publication and cancellation restore reserved inventory',async({page})=>{
   await login(page);
