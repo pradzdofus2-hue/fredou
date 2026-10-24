@@ -20,14 +20,14 @@ test('desktop catalogue, filters, detail and keyboard modal navigation',async({p
   await login(page);
   await page.goto('/collection');
   await expect(page.getByRole('heading',{name:'Ma collection',exact:true})).toBeVisible();
-  await expect(page.locator('.cards-grid .fc-card-tile')).toHaveCount(18);
-  await expect.poll(()=>page.locator('.cards-grid .fc-card-tile img').first().evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBeTruthy();
+  await expect(page.locator('.cards-grid .collection-card')).toHaveCount(18);
+  await expect.poll(()=>page.locator('.cards-grid .collection-card img').first().evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBeTruthy();
   await page.getByRole('button',{name:/Mythique/i}).first().click();
-  const count=await page.locator('.cards-grid .fc-card-tile').count();expect(count).toBeGreaterThan(0);expect(count).toBeLessThan(18);
+  const count=await page.locator('.cards-grid .collection-card').count();expect(count).toBeGreaterThan(0);expect(count).toBeLessThan(18);
   await page.getByLabel('Rechercher une carte',{exact:true}).fill('aucune-carte-inexistante');
   await expect(page.getByText('Aucune carte trouvée',{exact:true})).toBeVisible();
   await page.getByLabel('Rechercher une carte',{exact:true}).fill('');
-  await page.locator('.cards-grid .fc-card-tile').first().click();
+  await page.locator('.cards-grid .collection-card').first().click();
   await expect(page.locator('.detail-information h1')).toBeVisible();
   await page.goto('/boosters');
   await page.getByRole('button',{name:/Probabilités et garanties/}).first().click();
@@ -83,7 +83,7 @@ test('mobile navigation, responsive layout and reduced-motion preference',async(
   await expect(page.locator('.album-panel')).toHaveCount(3);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBeTruthy();
   await page.goto('/collection');
-  await expect(page.locator('.cards-grid .fc-card-tile').first()).toBeVisible();
+  await expect(page.locator('.cards-grid .collection-card').first()).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBeTruthy();
 });
 
