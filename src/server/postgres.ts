@@ -5,7 +5,6 @@
  *
  * Requires DATABASE_URL and the 'pg' dependency; call from server-only code.
  */
-import 'server-only';
 import { Pool, type PoolClient, type QueryResultRow } from 'pg';
 
 const globalPools = globalThis as typeof globalThis & { fredouPostgresPool?: Pool };
