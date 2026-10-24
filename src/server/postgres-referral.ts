@@ -1,3 +1,4 @@
+import {awardPgReferral} from './postgres-referral-reward';
 import {createHash,randomUUID} from 'node:crypto';
 import type {Action,ActionResult} from '../lib/contracts';
 import {ensure} from './errors';
@@ -21,6 +22,8 @@ export async function pgReferral(userId:string,action:Referral,key:string):Promi
    SELECT id FROM parents WHERE id=$2`,[ref.rows[0].id,userId]);
   ensure(loop.rows.length===0,'CONFLICT','Parrainage circulaire.',409);
   await db.query('UPDATE users SET referred_by=$1 WHERE id=$2',[ref.rows[0].id,userId]);
+  // If three packs were already opened before the referral was entered, settle now.
+  await awardPgReferral(db,userId);
   const date=new Date().toISOString();
   const result:ActionResult={type:'referral',message:'Parrain enregistré. Récompense après trois ouvertures.'};
   await db.query('INSERT INTO activities(id,user_id,kind,message,created_at) VALUES($1,$2,$3,$4,$5)',[randomUUID(),userId,'referral',result.message,date]);
