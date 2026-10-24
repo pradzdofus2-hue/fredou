@@ -21,7 +21,7 @@ export function PackArt({ booster, small = false }: { booster: Booster; small?: 
   return <div className={`fc-pack fc-pack--${booster.kind} ${small ? 'fc-pack--small' : ''}`} style={{ '--pack-tint': booster.color } as CSSProperties} aria-hidden="true">
     {daily && <span className="fc-pack-bow"><i /><i /><b /></span>}
     <div className="fc-pack-foil"><span className="fc-pack-seal fc-pack-seal--top" /><span className="fc-pack-seal fc-pack-seal--bottom" /><div className="fc-pack-pattern" /><div className="fc-pack-shine" />
-      <div className="fc-pack-label"><span className="fc-pack-wordmark">FREDOU<span>COLLECTION</span></span>{daily && <span className="fc-pack-daily-mark"><Gift size={20} /><span>CHAQUE JOUR</span></span>}
+      <div className="fc-pack-label"><span className="fc-pack-wordmark">KROSMORIA<span>COLLECTION</span></span>{daily && <span className="fc-pack-daily-mark"><Gift size={20} /><span>CHAQUE JOUR</span></span>}
         <svg className="fc-pack-emblem" viewBox="0 0 120 160" fill="none"><path d="M60 8 106 42v66l-46 44-46-44V42Z" stroke="currentColor" strokeWidth="2" /><path d="m60 24 31 24v53l-31 31-31-31V48Z" stroke="currentColor" opacity=".45" /><path d="M43 53h42L73 67H57v17h24L68 98H57v25l-14-14Z" fill="currentColor" /><path d="m60 0 4 6-4 6-4-6Zm0 148 4 6-4 6-4-6Z" fill="currentColor" /></svg>
         <span className="fc-pack-edition">{packEdition(booster)}</span><span className="fc-pack-count">5 CARTES<span>UNE NOUVELLE HISTOIRE</span></span>
       </div><span className="fc-pack-serial">FC · 001 / CHRONIQUES</span>
@@ -83,7 +83,7 @@ export function BoosterShowcase({ compact = false, initialTab = 'free' }: { comp
     <div className="fc-booster-tabs" role="tablist" aria-label="Catégories de boosters">{([['free', 'Gratuits'], ['daily', 'Du jour'], ['shop', 'Boutique']] as const).map(([value, label]) => <button key={value} role="tab" aria-selected={tab === value} onClick={() => chooseTab(value)} className={tab === value ? 'is-active' : ''}>{value === 'free' ? <Sparkles size={15} /> : value === 'daily' ? <Gift size={15} /> : <Diamond size={15} />}{label}{value === 'daily' && <span className="fc-booster-tab-dot" />}</button>)}</div>
     <div className="fc-booster-layout"><div className={`fc-booster-stage fc-booster-stage--${tab}`}>
       <span className="fc-booster-stage-grid" aria-hidden="true" /><span className="fc-booster-stage-light" aria-hidden="true" />
-      <div className="fc-booster-stage-caption"><span>{tab === 'free' ? 'À CHAQUE RETOUR, UNE DÉCOUVERTE' : tab === 'daily' ? 'VOTRE RENDEZ-VOUS QUOTIDIEN' : 'DES ÉDITIONS À EXPLORER'}</span><span>FREDOU / COLLECTION 001</span></div>
+      <div className="fc-booster-stage-caption"><span>{tab === 'free' ? 'À CHAQUE RETOUR, UNE DÉCOUVERTE' : tab === 'daily' ? 'VOTRE RENDEZ-VOUS QUOTIDIEN' : 'DES ÉDITIONS À EXPLORER'}</span><span>KROSMORIA / COLLECTION 001</span></div>
       <div className={`fc-pack-lineup ${visible.length === 1 ? 'fc-pack-lineup--single' : ''}`}>
         {visible.length === 1 && <div className="fc-pack-echo fc-pack-echo--left" aria-hidden="true"><PackArt booster={selected} /></div>}
         {visible.map((booster, index) => <button key={booster.id} onClick={() => setSelectedId(booster.id)} className={`fc-pack-choice ${selected.id === booster.id ? 'is-selected' : ''}`} style={{ '--pack-angle': `${visible.length === 1 ? -2 : (index - (visible.length - 1) / 2) * 3}deg`, '--pack-tint': booster.color } as CSSProperties} aria-label={`Sélectionner ${booster.name}`} aria-pressed={selected.id === booster.id}><span className="fc-pack-choice-halo" /><PackArt booster={booster} /><span className="fc-pack-choice-shadow" /><span className="fc-pack-choice-name">{booster.name}</span></button>)}
@@ -116,6 +116,70 @@ function OpeningExperience({ booster, opening, replay, close, again }: Encounter
   const root = useRef<HTMLDivElement>(null), closeRef = useRef(close), nextLock = useRef(false); closeRef.current = close;
   const stage = animation.phase, cards = opening.cards.map(draw => ({ draw, card: state.cards.find(card => card.id === draw.cardId)! }));
   const latest = state.boosters.find(b => b.id === booster.id), highlighted = animation.flipping === null ? null : cards[animation.flipping]?.card;
+  // Individual flips remain silent. "Tout révéler" plays the highest rarity exactly once.
+  const flipAudio = useRef<HTMLAudioElement | null>(null);
+  const allRevealSoundPlayed = useRef(false);
+  const allRevealRequested = useRef(false);
+  const [bestRarityHighlighted, setBestRarityHighlighted] = useState(false);
+  const playHighestRarityOnce = () => {
+    if (allRevealSoundPlayed.current) return;
+    allRevealSoundPlayed.current = true;
+    const rarity = Math.max(...cards.map(item => item.card.rarity));
+    const files = ['commune', 'peu-commune', 'rare', 'epique', 'legendaire', 'mythique'];
+    const name = files[rarity];
+    if (!name) return;
+    try {
+      flipAudio.current?.pause();
+      const audio = new Audio('/sounds/' + name + '.wav');
+      audio.volume = 0.85;
+      flipAudio.current = audio;
+      audio.addEventListener('error', () => {
+        if (flipAudio.current !== audio) return;
+        const fallback = new Audio('/sounds/' + name + '.ogg');
+        fallback.volume = 0.65;
+        flipAudio.current = fallback;
+        void fallback.play().catch(() => {});
+      }, {once:true});
+      void audio.play().catch(() => {});
+    } catch { /* Optional sound must never block rewards. */ }
+  };
+  // Wait until the fifth card has fully finished flipping before the final cue.
+  useEffect(() => {
+    if (stage !== 'summary' || !allRevealRequested.current || allRevealSoundPlayed.current) return;
+    setBestRarityHighlighted(true);
+    playHighestRarityOnce();
+    // Only an explicit click on Tout révéler is allowed to trigger this cue.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
+  // A flip emits one sound, chosen from the server-assigned card rarity.
+  const playedFlips = useRef(new Set<number>());
+  useEffect(() => {
+    const index = animation.flipping;
+    if (stage !== 'reveal' || index === null || playedFlips.current.has(index) || allRevealSoundPlayed.current || animation.automatic) return;
+    playedFlips.current.add(index);
+    const rarity = cards[index]?.card.rarity;
+    const files = ['commune', 'peu-commune', 'rare', 'epique', 'legendaire', 'mythique'];
+    const name = typeof rarity === 'number' ? files[rarity] : undefined;
+    if (!name) return;
+    try {
+      flipAudio.current?.pause();
+      const audio = new Audio('/sounds/' + name + '.wav');
+      audio.volume = 0.85;
+      flipAudio.current = audio;
+      // Keep existing audio working until the original WAV assets are uploaded.
+      const fallback = () => {
+        if (flipAudio.current !== audio) return;
+        const old = new Audio('/sounds/' + name + '.ogg');
+        old.volume = 0.65;
+        flipAudio.current = old;
+        void old.play().catch(() => {});
+      };
+      audio.addEventListener('error', fallback, { once: true });
+      void audio.play().catch(() => {});
+    } catch { /* Sound is optional and never blocks the reveal. */ }
+  }, [animation.flipping, stage, animation.automatic]);
+  useEffect(() => () => { flipAudio.current?.pause(); }, []);
+
   useEffect(() => {
     const oldOverflow = document.body.style.overflow, previousFocus = document.activeElement as HTMLElement | null;
     const siblings = Array.from(document.body.children).filter((element): element is HTMLElement => element instanceof HTMLElement && element !== root.current).map(element => ({ element, inert: element.inert }));
@@ -151,15 +215,15 @@ function OpeningExperience({ booster, opening, replay, close, again }: Encounter
     {options && <div className="fc-opening-options"><div><strong>À votre rythme</strong><button aria-label="Fermer les options" onClick={() => setOptions(false)}><X size={15} /></button></div><label><span>Animations réduites<small>Afficher directement les cinq cartes</small></span><button role="switch" aria-checked={!!state.currentUser?.preferences.reducedMotion} aria-label="Réduire les animations d’ouverture" disabled={busy} onClick={() => void act({ type: 'preferences', reducedMotion: !state.currentUser?.preferences.reducedMotion })} className={`fc-opening-switch ${state.currentUser?.preferences.reducedMotion ? 'is-on' : ''}`}><i /></button></label><p>Vos cartes sont déjà enregistrées. Vous pouvez fermer puis revoir ce tirage dans l’historique.</p></div>}
     <div className="fc-opening-main"><div className="fc-opening-title"><span>{stage === 'summary' ? replay ? 'HISTORIQUE DE VOTRE COLLECTION' : 'CINQ CARTES ONT REJOINT VOTRE COLLECTION' : stage === 'reveal' ? `${animation.revealed.length} / 5 CARTES RÉVÉLÉES` : 'UNE NOUVELLE DÉCOUVERTE'}</span><h2 id="fc-opening-title">{displayName}</h2></div>
       {(stage === 'pack' || stage === 'tear') && <div className="fc-opening-pack-stage"><span className="fc-opening-pack-aura" /><div className="fc-opening-flash" /><button className="fc-opening-pack-button" disabled={stage === 'tear'} onClick={() => dispatch({ type: 'OPEN' })} aria-label="Déchirer le booster"><PackArt booster={booster} /><span className="fc-opening-tear-line" /><span className="fc-opening-pack-shadow" /></button><p className="fc-opening-pack-prompt">{stage === 'tear' ? 'Les horizons s’ouvrent…' : 'Touchez le booster pour l’ouvrir'}<span>{stage === 'tear' ? 'Vos cartes vous attendent.' : 'Cinq cartes. Une nouvelle histoire.'}</span></p></div>}
-      {(stage === 'fan' || stage === 'reveal' || stage === 'summary') && <div className="fc-opening-card-area"><div className="fc-opening-card-row">{cards.map(({ draw, card }, index) => <div key={`${opening.id}-${index}`} className={`fc-opening-card ${animation.flipping === index ? 'is-flipping' : ''} ${animation.revealed.includes(index) ? 'is-revealed' : ''} ${card.rarity >= 4 ? 'is-exceptional' : ''}`} style={{ '--card-index': index, '--fan-x': `${(2 - index) * 118}px`, '--fan-angle': `${(index - 2) * 11}deg`, '--fan-y': `${Math.abs(index - 2) * 13}px`, '--reveal-color': state.config.rarities[card.rarity].color } as CSSProperties} inert={stage === 'fan' || (stage === 'reveal' && (index !== animation.revealed.length || animation.flipping !== null)) || undefined}>
+      {(stage === 'fan' || stage === 'reveal' || stage === 'summary') && <div className="fc-opening-card-area"><div className="fc-opening-card-row">{cards.map(({ draw, card }, index) => <div key={`${opening.id}-${index}`} className={`fc-opening-card ${animation.flipping === index ? 'is-flipping' : ''} ${animation.revealed.includes(index) ? 'is-revealed' : ''} ${card.rarity >= 4 ? 'is-exceptional' : ''} ${bestRarityHighlighted && card.rarity === Math.max(...cards.map(c => c.card.rarity)) ? 'is-best-rarity-highlighted' : ''}`} style={{ '--card-index': index, '--fan-x': `${(2 - index) * 118}px`, '--fan-angle': `${(index - 2) * 11}deg`, '--fan-y': `${Math.abs(index - 2) * 13}px`, '--reveal-color': state.config.rarities[card.rarity].color } as CSSProperties} inert={stage === 'fan' || (stage === 'reveal' && (index !== animation.revealed.length || animation.flipping !== null)) || undefined}>
         <span className="fc-opening-card-glow" /><CardReveal card={card} revealed={animation.revealed.includes(index)} onReveal={() => dispatch({ type: 'REVEAL', index })} index={index} badge={draw.isNew ? 'NOUVEAU' : 'DOUBLON +1'} reducedMotion={reduced} className="fc-opening-card-face" /><div className="fc-opening-card-caption"><strong>{card.name}</strong><span style={{ color: state.config.rarities[card.rarity].color }}>{state.config.rarities[card.rarity].name}</span></div>
       </div>)}</div></div>}
       <div className="fc-opening-controls" aria-live="polite">
         <span className="fc-opening-sr-only">{animation.revealed.length > 0 && stage !== 'summary' ? `Carte ${animation.revealed.length} : ${cards[animation.revealed.length - 1].card.name}, ${state.config.rarities[cards[animation.revealed.length - 1].card.rarity].name}.` : ''}</span>
-        {stage === 'reveal' && <><p>{highlighted && highlighted.rarity >= 4 ? <span className="fc-opening-extraordinary" style={{ color: state.config.rarities[highlighted.rarity].color }}><Sparkles size={18} /> Une rencontre {state.config.rarities[highlighted.rarity].name.toLowerCase()}.</span> : animation.automatic ? 'Chaque découverte prend sa place…' : 'Touchez la prochaine carte pour la révéler.'}</p><button className="fc-opening-secondary" disabled={animation.automatic} onClick={() => dispatch({ type: 'AUTOMATIC' })}><Sparkles size={16} /> Tout révéler</button></>}
+        {stage === 'reveal' && <><p>{highlighted && highlighted.rarity >= 4 ? <span className="fc-opening-extraordinary" style={{ color: state.config.rarities[highlighted.rarity].color }}><Sparkles size={18} /> Une rencontre {state.config.rarities[highlighted.rarity].name.toLowerCase()}.</span> : animation.automatic ? 'Chaque découverte prend sa place…' : 'Touchez la prochaine carte pour la révéler.'}</p><button className="fc-opening-secondary" disabled={animation.automatic} onClick={() => { allRevealRequested.current = true; dispatch({ type: 'AUTOMATIC' }); }}><Sparkles size={16} /> Tout révéler</button></>}
         {stage === 'summary' && <><div className="fc-opening-reward"><span><Check size={17} /> {replay ? 'Récompenses déjà reçues' : 'Collection mise à jour'}</span><Shards value={`+${opening.shardsReward}`} />{opening.pityTriggered && <b><Sparkles size={13} /> Pitié mythique</b>}</div><div className="fc-opening-summary-stats"><span>{opening.cards.filter(card => card.isNew).length} nouvelle(s) carte(s)</span><i /><span>{opening.cards.filter(card => !card.isNew).length} doublon(s)</span></div><div className="fc-opening-buttons"><button className="fc-opening-secondary" onClick={close}><ArrowLeft size={16} /> Retour aux boosters</button><button className="fc-booster-primary" disabled={busy || !latest?.available || !latest.active} onClick={() => void next()}>{busy ? <LoaderCircle className="fc-booster-spinner" size={16} /> : <RotateCcw size={16} />} Ouvrir à nouveau</button></div></>}
       </div>
-    </div><span className="fc-opening-footnote">FREDOU COLLECTION · {replay ? formatDate(opening.createdAt) : 'VOTRE HISTOIRE CONTINUE'}</span>
+    </div><span className="fc-opening-footnote">KROSMORIA · {replay ? formatDate(opening.createdAt) : 'VOTRE HISTOIRE CONTINUE'}</span>
   </div>, document.body);
 }
 

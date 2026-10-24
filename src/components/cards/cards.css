@@ -485,3 +485,14 @@
 @media (prefers-reduced-motion: reduce) { .fc-card-inspection { animation: none; }.fc-inspection-turn { transition: none; } }
 .fc-card-inspection[data-motion-reduced='true'] { animation: none; }
 .fc-card-inspection[data-motion-reduced='true'] .fc-inspection-turn { transition: none; }
+
+/* Krosmoria card refresh: rarity at top-left, combat scores inside bubbles only. */
+.collection-card.fc-card .fc-card-top.card-caption { flex-direction: row; }
+.collection-card.fc-card .fc-card-top .fc-card-rarity-badge { order: -1; flex-shrink: 0; background: radial-gradient(circle at 30% 25%,#83d9ff,#286ac9 70%,#12336d); color: #fff; border: 1px solid #9adfff; text-shadow: 0 1px 2px #153b70; }
+.collection-card.fc-card .fc-card-stats.card-caption-bottom { justify-content: space-around; background: transparent; padding: 1px 8px; height: 30px; flex-basis: 30px; }
+.collection-card.fc-card .fc-card-stats .fc-combat-bubble { display: inline-flex; align-items: center; justify-content: center; width: 31px; height: 31px; flex-shrink: 0; border-radius: 50%; font-size: 13px; font-weight: 900; color: #fff; text-shadow: 0 1px 3px #0009; border: 2px solid #ffe9bc; box-shadow: 0 2px 6px #0009,inset 0 2px 5px #ffffff45; }
+.collection-card.fc-card .fc-card-stats .fc-combat-attack { background: radial-gradient(circle at 35% 25%,#ffba6d,#ca3a27 75%); }
+.collection-card.fc-card .fc-card-stats .fc-combat-defense { background: radial-gradient(circle at 35% 25%,#82dcff,#2266ba 75%); }
+.fc-card-reveal-trigger .fc-card-back-medallion { width: 85%; aspect-ratio: 1.5; border: none; border-radius: 12px; background: transparent; box-shadow: none; }
+.fc-card-reveal-trigger .fc-card-back-medallion img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 10px #000b); }
+.fc-card-reveal-trigger .fc-card-back-brand { margin-top: 7%; }

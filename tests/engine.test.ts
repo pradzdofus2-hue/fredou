@@ -13,7 +13,8 @@ const run = (userId: string, action: Parameters<typeof engine.executeAction>[1],
 after(()=>{database.getDb().close();for(const suffix of ['','-wal','-shm'])rmSync(testDatabasePath+suffix,{force:true});});
 test('catalogue coherent and real persistent inventory', () => {
   const state = engine.getState('fredou');
-  assert.equal(state.cards.length, 72);
+  // Two of the 72 original cards are deliberately hidden as catalogue aliases.
+  assert.equal(state.cards.length, 70);
   assert.equal(state.series.length, 3);
   assert.ok(state.inventory.length > 10);
   assert.ok(state.currentUser!.balance > 0);
@@ -203,4 +204,70 @@ test('idempotent seed reapplies central configuration without altering past ledg
   assert.equal(afterState.boosters.find(b=>b.id==='free')!.pityLimit,250);
   assert.deepEqual(afterState.ledger,before.ledger);
   assert.deepEqual(afterState.inventory,before.inventory);
+});
+
+
+test('guest activity feed excludes private economy and referrals while owners retain history',()=>{
+ const inserted=[
+  {id:randomUUID(),kind:'shop',message:'Achat privé de boosters.'},
+  {id:randomUUID(),kind:'referral',message:'Parrainage privé.'},
+  {id:randomUUID(),kind:'event',message:'Événement public.'}
+ ];
+ for(const activity of inserted)database.getDb().prepare('INSERT INTO activities(id,user_id,kind,message,created_at) VALUES(?,?,?,?,?)').run(activity.id,'fredou',activity.kind,activity.message,new Date().toISOString());
+ const guest=engine.getState(null).activities;
+ const owner=engine.getState('fredou').activities;
+ assert.ok(guest.some(a=>a.id===inserted[2].id),'Public event should remain visible');
+ assert.ok(!guest.some(a=>a.id===inserted[0].id||a.id===inserted[1].id),'Guest must not see private transactions');
+ assert.ok(owner.some(a=>a.id===inserted[0].id),'Owner should see own purchases');
+ assert.ok(owner.some(a=>a.id===inserted[1].id),'Owner should see own referral history');
+});
+
+ 
+test('SQLite trade awards ten-unique achievement to receiving player exactly once',()=>{
+ const db=database.getDb();
+ const sender=database.createUser({username:'Milestone sender'});
+ const recipient=database.createUser({username:'Milestone recipient'});
+ const cards=db.prepare('SELECT id FROM cards WHERE rarity=0 AND recycle_value=1 ORDER BY id LIMIT 10').all() as {id:string}[];
+ assert.equal(cards.length,10);
+ const date=new Date().toISOString();
+ for(let i=0;i<9;i++){
+  db.prepare('INSERT INTO inventory(user_id,card_id,quantity,favorite,first_obtained_at,last_obtained_at) VALUES(?,?,?,0,?,?)')
+   .run(recipient,cards[i].id,i===0?2:1,date,date);
+ }
+ db.prepare('INSERT INTO inventory(user_id,card_id,quantity,favorite,first_obtained_at,last_obtained_at) VALUES(?,?,1,0,?,?)')
+  .run(sender,cards[9].id,date,date);
+ assert.equal(engine.getState(recipient).currentUser!.uniqueCards,9);
+ const before=engine.getState(recipient).currentUser!.balance;
+ const trade=run(sender,{type:'trade-create',recipientId:recipient,
+  offered:[{cardId:cards[9].id,quantity:1}],requested:[{cardId:cards[0].id,quantity:1}]});
+ run(recipient,{type:'trade-respond',tradeId:trade.entityId!,decision:'accept'});
+ const after=engine.getState(recipient);
+ assert.equal(after.currentUser!.uniqueCards,10);
+ const achievement=after.achievements.find(x=>x.id==='ten-unique');
+ assert.ok(achievement?.unlockedAt,'Recipient must earn the ten-unique success');
+ assert.equal(after.currentUser!.balance,before+achievement!.reward);
+ const grants=db.prepare('SELECT COUNT(*) n FROM ledger WHERE user_id=? AND reference_id=?').get(recipient,'ten-unique') as {n:number};
+ assert.equal(grants.n,1);
+ assert.throws(()=>run(recipient,{type:'trade-respond',tradeId:trade.entityId!,decision:'accept'}));
+ assert.equal((db.prepare('SELECT COUNT(*) n FROM ledger WHERE user_id=? AND reference_id=?').get(recipient,'ten-unique') as {n:number}).n,1);
+});
+
+
+test('tampered pending trade rejects invalid quantities and never transfers cards',()=>{
+ const db=database.getDb();
+ const a=database.createUser({username:'Trade integrity A'}),b=database.createUser({username:'Trade integrity B'});
+ const date=new Date().toISOString();
+ db.prepare('INSERT INTO inventory(user_id,card_id,quantity,favorite,first_obtained_at,last_obtained_at) VALUES(?,?,1,0,?,?)').run(a,'card-1',date,date);
+ db.prepare('INSERT INTO inventory(user_id,card_id,quantity,favorite,first_obtained_at,last_obtained_at) VALUES(?,?,1,0,?,?)').run(b,'card-2',date,date);
+ const trade=run(a,{type:'trade-create',recipientId:b,offered:[{cardId:'card-1',quantity:1}],requested:[{cardId:'card-2',quantity:1}]});
+ for(const quantity of [0,-1,1.5]){
+  db.prepare('UPDATE trades SET offered=? WHERE id=?').run(JSON.stringify([{cardId:'card-1',quantity}]),trade.entityId!);
+  assert.throws(()=>run(b,{type:'trade-respond',tradeId:trade.entityId!,decision:'accept'}));
+  assert.equal(engine.getState(b).trades.find(t=>t.id===trade.entityId)?.status,'pending');
+  assert.equal(engine.getState(a).inventory.find(i=>i.cardId==='card-1')?.quantity,1);
+  assert.equal(engine.getState(b).inventory.find(i=>i.cardId==='card-2')?.quantity,1);
+ }
+ db.prepare('UPDATE trades SET offered=? WHERE id=?').run(JSON.stringify([{cardId:'card-1',quantity:1}]),trade.entityId!);
+ run(b,{type:'trade-respond',tradeId:trade.entityId!,decision:'accept'});
+ assert.equal(engine.getState(b).trades.find(t=>t.id===trade.entityId)?.status,'accepted');
 });

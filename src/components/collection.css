@@ -1,0 +1,35 @@
+/* Wiki layout: preserve the trading-card proportions on detail pages. */
+.fc-wiki { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 64px; }
+.fc-wiki-banner { position: relative; overflow: hidden; padding: 24px 28px; border: 1px solid #302934; border-radius: 18px; background: linear-gradient(135deg,#1b1720,#111017); }
+.fc-wiki-banner h1 { position: relative; margin: 12px 0; font-size: clamp(24px,3vw,42px); line-height: 1.2; }
+.fc-wiki-breadcrumbs,.fc-wiki-tags { display:flex; flex-wrap:wrap; gap:10px; align-items:center; position:relative; }
+.fc-wiki-identifier { display:block; position:relative; font-size:12px; opacity:.65; }
+.fc-wiki-watermark { position:absolute; right:18px; bottom:-30px; font-size:140px; opacity:.045; pointer-events:none; }
+.fc-wiki-columns { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,340px); gap:28px; align-items:start; margin-top:24px; }
+.fc-wiki-main { min-width:0; display:grid; gap:20px; }
+.fc-wiki-main > section { min-width:0; border:1px solid #302934; border-radius:16px; padding:22px; background:#151219; }
+.fc-wiki-main h2,.fc-wiki-associated h2 { font-size:clamp(19px,2vw,28px); margin:8px 0 16px; }
+.fc-wiki-main p { overflow-wrap:anywhere; }
+.fc-wiki-sidebar { min-width:0; width:100%; }
+.fc-wiki-card-panel { min-width:0; width:100%; padding:14px; border:1px solid #302934; border-radius:16px; background:#17131b; }
+.fc-wiki-card-panel > .fc-card-tilt,
+.fc-wiki-card-panel > .fc-card-3d,
+.fc-wiki-card-panel > .collection-card,
+.fc-wiki-card-panel .collection-card.fc-card { max-width:100%; }
+.fc-wiki-card-panel .collection-card.fc-card { width:100%; aspect-ratio:5 / 7; height:auto; }
+.fc-wiki-card-panel .fc-card-art img { max-width:100%; }
+.fc-wiki-inspect-hint { display:block; width:100%; margin:10px 0; padding:8px; cursor:pointer; }
+.fc-wiki-market-facts { display:grid; gap:6px; margin:16px 0; }
+.fc-wiki-market-facts > div { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.fc-wiki-associated { min-width:0; margin-top:30px; }
+.fc-wiki-associated-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
+.fc-wiki-associated .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(145px,1fr)); gap:16px; }
+.fc-wiki-history-table > div { display:flex; gap:14px; justify-content:space-between; padding:8px 0; border-bottom:1px solid #ffffff12; }
+.fc-wiki-empty-history { display:flex; gap:12px; align-items:center; }
+@media(max-width:760px) {
+  .fc-wiki { width:min(100% - 24px,580px); }
+  .fc-wiki-columns { grid-template-columns:minmax(0,1fr); }
+  .fc-wiki-sidebar { width:min(100%,340px); margin-inline:auto; grid-row:1; }
+  .fc-wiki-main > section { padding:16px; }
+  .fc-wiki-banner { padding:18px; }
+}

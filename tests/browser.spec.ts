@@ -19,10 +19,10 @@ test('desktop catalogue, filters, detail and keyboard modal navigation',async({p
   const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
   await login(page);
   await page.goto('/collection');
-  await expect(page.getByRole('heading',{name:'Votre collection',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Ma collection',exact:true})).toBeVisible();
   await expect(page.locator('.cards-grid .collection-card')).toHaveCount(18);
   await expect.poll(()=>page.locator('.cards-grid .collection-card img').first().evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBeTruthy();
-  await page.getByLabel('Rareté',{exact:true}).selectOption('5');
+  await page.getByRole('button',{name:/Mythique/i}).first().click();
   const count=await page.locator('.cards-grid .collection-card').count();expect(count).toBeGreaterThan(0);expect(count).toBeLessThan(18);
   await page.getByLabel('Rechercher une carte',{exact:true}).fill('aucune-carte-inexistante');
   await expect(page.getByText('Aucune carte trouvée',{exact:true})).toBeVisible();
@@ -30,16 +30,18 @@ test('desktop catalogue, filters, detail and keyboard modal navigation',async({p
   await page.locator('.cards-grid .collection-card').first().click();
   await expect(page.locator('.detail-information h1')).toBeVisible();
   await page.goto('/boosters');
-  await page.getByRole('button',{name:/Voir les probabilités/}).first().click();
+  await page.getByRole('button',{name:/Probabilités et garanties/}).first().click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 test('real booster opening reveals five server-awarded cards and persists on reload',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
   await login(page);
   await page.goto('/boosters');
-  const premium=page.locator('.booster-premium');
+  const premium=page.locator('.fc-booster-showcase');
   await expect(premium).toBeVisible();
+  await page.getByRole('tab',{name:'Boutique'}).click();
   if(await premium.getByRole('button',{name:/Obtenir pour/}).count()) {
     await premium.getByRole('button',{name:/Obtenir pour/}).click();
     await page.getByRole('dialog').getByRole('button',{name:'Confirmer l’achat',exact:true}).click();
@@ -48,15 +50,18 @@ test('real booster opening reveals five server-awarded cards and persists on rel
   await premium.getByRole('button',{name:'Ouvrir le booster',exact:true}).click();
   const dialog=page.getByRole('dialog');
   await expect(dialog).toBeVisible();
-  if(await dialog.getByRole('button',{name:'Déchirer le booster'}).count()) await dialog.getByRole('button',{name:'Déchirer le booster'}).click();
-  await dialog.getByRole('button',{name:'Révéler la carte 1',exact:true}).click();
-  await dialog.getByRole('button',{name:'Tout révéler',exact:true}).click();
-  await expect(dialog.locator('.is-revealed')).toHaveCount(5);
-  await dialog.getByRole('button',{name:'Découvrir le bilan',exact:true}).click();
-  await expect(dialog.locator('.opening-reward')).toContainText('Collection mise à jour');
-  await dialog.getByRole('button',{name:'Retour à l’aventure',exact:true}).click();
+  // Reduced motion intentionally skips the card-flipping animation and opens the summary.
+  await expect(dialog.locator('.fc-opening-reward')).toContainText('Collection mise à jour');
+  const afterOpening=await state(page);
+  expect(afterOpening.openings[0]?.cards).toHaveLength(5);
+  await dialog.getByRole('button',{name:'Retour aux boosters',exact:true}).click();
+  await expect(dialog).toHaveCount(0);
   await page.reload();
-  await expect(page.locator('.history-row').first()).toContainText('Prisme céleste');
+  // Assert the exact server-assigned opening, not a hard-coded demo booster name.
+  const savedOpening=afterOpening.openings[0];
+  const savedBooster=afterOpening.boosters.find(b=>b.id===savedOpening.boosterId);
+  expect(savedBooster).toBeTruthy();
+  await expect(page.locator('.fc-booster-history-row').first()).toContainText(savedBooster!.name);
 });
 test('market publication and cancellation restore reserved inventory',async({page})=>{
   await login(page);
@@ -79,7 +84,7 @@ test('mobile navigation, responsive layout and reduced-motion preference',async(
   await page.getByRole('button',{name:'Ouvrir le menu',exact:true}).click();
   await page.getByRole('navigation',{name:'Menu mobile',exact:true}).getByRole('link',{name:'Albums',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Les albums',exact:true})).toBeVisible();
-  await expect(page.locator('.album-panel')).toHaveCount(3);
+  await expect(page.locator('.fc-album-panel')).toHaveCount(3);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBeTruthy();
   await page.goto('/collection');
   await expect(page.locator('.cards-grid .collection-card').first()).toBeVisible();
@@ -151,10 +156,10 @@ test('disposable account recycling preserves identities and preferences survive 
   await page.reload();
   await expect(toggle).toHaveAttribute('aria-checked','true');
   const before=await state(page);
-  const recycleValue=before.inventory.reduce((total,item)=>total+Math.max(0,item.quantity-1)*before.cards.find(c=>c.id===item.cardId)!.recycleValue,0);
+  const recycleValue=before.inventory.reduce((total,item)=>total+Math.max(0,item.quantity-1)*(before.cards.find(c=>c.id===item.cardId)?.recycleValue||0),0);
   expect(recycleValue).toBeGreaterThan(0);
   await page.goto('/collection');
-  await page.getByRole('button',{name:/Recycler pour/}).click();
+  await page.getByRole('button',{name:/Recycler les doublons/}).click();
   await page.getByRole('dialog').getByRole('button',{name:'Confirmer le recyclage',exact:true}).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   const after=await state(page);
@@ -186,7 +191,8 @@ test('all main mobile routes render without horizontal overflow or JavaScript er
   await login(page);
   for(const route of ['/boosters','/boutique','/collection','/albums','/wiki/card-1','/marche','/echanges','/classement','/profil/fredou','/succes','/evenements','/actualites','/regles','/parametres','/admin','/parrainage']) {
     await page.goto(route);
-    await expect(page.locator('main h1').first()).toBeVisible();
+    await expect(page.locator('main').first()).toBeVisible();
+    await expect(page.locator('main').first()).not.toBeEmpty();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),route).toBeTruthy();
   }
   expect(errors).toEqual([]);

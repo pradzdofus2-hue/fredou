@@ -1,2 +1,2 @@
-import { GameApp } from '@/components/game-app';
-export default function Page() { return <GameApp />; }
+// Navigation is rendered by the persistent GameApp in the root layout.
+export default function Page() { return null; }

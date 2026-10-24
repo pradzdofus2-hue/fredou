@@ -1,3 +1,4 @@
+import { HIDDEN_DUPLICATE_CARD_IDS, VISIBLE_CARDS_CONDITION } from './card-visibility';
 import { randomInt } from 'node:crypto';
 import type { ActionResult, Booster, Card, DrawnCard, Opening, Rarity } from '../lib/contracts';
 import { all, getDb, id, now, one } from './database';
@@ -45,7 +46,7 @@ export function openBooster(userId:string,boosterId:string):ActionResult {
   const reserve=one<Reserve>('SELECT * FROM user_boosters WHERE user_id=? AND booster_id=?',userId,boosterId)!;
   const effective=effectiveReserve(raw,reserve,Date.now());
   const openingId=id(),date=now(),cards:DrawnCard[]=[];
-  const candidates=all<{id:string;rarity:Rarity}>(`SELECT id,rarity FROM cards ${booster.seriesId?'WHERE series_id=?':''}`, ...(booster.seriesId?[booster.seriesId]:[]));
+  const candidates=all<{id:string;rarity:Rarity}>(`SELECT id,rarity FROM cards WHERE ${VISIBLE_CARDS_CONDITION} ${booster.seriesId?'AND series_id=?':''}`, ...HIDDEN_DUPLICATE_CARD_IDS, ...(booster.seriesId?[booster.seriesId]:[]));
   for(let rarity=0;rarity<6;rarity++)ensure(candidates.some(c=>c.rarity===rarity),'INTERNAL_ERROR','Une rareté ne possède aucune carte dans ce booster.',500);
   const pityTriggered=reserve.pity_count+1>=booster.pityLimit;
   let foundMythic=false;

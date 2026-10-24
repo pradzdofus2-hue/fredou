@@ -1,6 +1,11 @@
 {
-  "name": "fredou-collection", "version": "1.0.0", "private": true, "type": "module",
-  "engines": { "node": ">=24.0.0" },
+  "name": "fredou-collection",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
@@ -12,8 +17,30 @@
     "test": "tsx --test tests/*.test.ts",
     "test:concurrency": "tsx --test tests/concurrency.test.ts",
     "test:e2e": "node scripts/browser-tests.mjs",
-    "verify": "npm run typecheck && npm test && npm run build"
+    "verify": "npm run typecheck && npm test && npm run build",
+    "db:check:postgres": "tsx scripts/check-postgres.ts",
+    "db:check:runtime": "tsx scripts/check-postgres-runtime.ts",
+    "db:test:writes": "tsx scripts/test-postgres-writes.ts",
+    "art:check": "tsx scripts/check-artwork.ts",
+    "db:check:artwork": "tsx scripts/check-postgres-artwork.ts",
+    "deploy:check": "tsx scripts/check-deploy-config.ts",
+    "preview:check": "tsx scripts/check-preview.ts"
   },
-  "dependencies": { "next": "16.4.3", "react": "19.3.1", "react-dom": "19.3.1", "zod": "4.6.7", "lucide-react": "1.61.0" },
-  "devDependencies": { "typescript": "^5.9.3", "@types/node": "^24", "@types/react": "^19", "@types/react-dom": "^19", "tsx": "4.23.15", "@playwright/test": "^1.56.1" }
+  "dependencies": {
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7",
+    "lucide-react": "1.61.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^24",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tsx": "4.23.15",
+    "@playwright/test": "^1.56.1",
+    "@types/pg": "^8.15.5"
+  }
 }

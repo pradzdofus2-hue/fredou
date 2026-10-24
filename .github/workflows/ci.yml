@@ -1,0 +1,119 @@
+name: FREDOU Quality Gate
+on:
+  push:
+    branches: [main, feature/dofus-catalogue]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    name: TypeScript, unit, concurrency and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Cross-process concurrency
+        run: npm run test:concurrency
+      - name: Production build
+        run: npm run build
+
+  browser:
+    name: Real browser end-to-end gameplay
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Install Chrome and system libraries
+        run: npx playwright install --with-deps chrome
+      - name: Build website
+        run: npm run build
+      - name: Playwright gameplay scenarios (disposable SQLite)
+        run: npm run test:e2e
+      - name: Upload browser failure report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fredou-browser-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  artwork:
+    name: Published card illustrations integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Seed isolated local catalogue
+        run: npm run db:seed
+        env:
+          DATABASE_PATH: data/ci-artwork.sqlite
+      - name: Check each card illustration in checkout
+        run: npm run art:check
+        env:
+          DATABASE_PATH: data/ci-artwork.sqlite
+
+  postgres:
+    name: Real PostgreSQL game transaction rollback integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: fredou_ci
+          POSTGRES_PASSWORD: local_ci_only
+          POSTGRES_DB: fredou_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fredou_ci -d fredou_ci"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgresql://fredou_ci:local_ci_only@127.0.0.1:5432/fredou_ci
+      FREDOU_EPHEMERAL_PG_CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Prepare browser API roles for private schema migration
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN;"
+      - name: Create private PostgreSQL schema
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261024_create_fredou_private_schema.sql
+      - name: Seed isolated catalogue
+        run: npx tsx scripts/seed-postgres-ci.ts
+      - name: Validate schema and guest state
+        run: npm run db:check:runtime
+      - name: Exercise all game transactions with rollback and verify cleanup
+        run: npm run db:test:writes
+      - name: Test simultaneous booster replays on separate PostgreSQL connections
+        run: npx tsx scripts/test-postgres-concurrency-ci.ts

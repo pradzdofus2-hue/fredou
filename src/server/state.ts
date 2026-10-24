@@ -1,3 +1,4 @@
+import { HIDDEN_DUPLICATE_CARD_IDS, VISIBLE_CARDS_CONDITION } from './card-visibility';
 import type { StateResponse, CurrentUser, PublicUser, Rankings, RankingMetric, InventoryItem, Opening, LedgerEntry, Listing, Trade, GameEvent, NewsItem, PricePoint, Acquisition, Activity, Card, Series } from '../lib/contracts';
 import { all, getDb, now } from './database';
 import { boosterState } from './game';
@@ -25,11 +26,11 @@ function buildState(userId:string|null):StateResponse {
   const ledger=currentUser?all<LedgerEntry>('SELECT id,amount,balance_after balanceAfter,reason,created_at createdAt,reference_id referenceId FROM ledger WHERE user_id=? ORDER BY rowid DESC LIMIT 200',userId!):[];
   const listings=all<Listing>(`SELECT id,COALESCE(seller_id,'deleted') sellerId,card_id cardId,quantity,price,status,buyer_id buyerId,created_at createdAt,completed_at completedAt FROM listings WHERE status='active' ${currentUser?'OR seller_id=? OR buyer_id=?':''} ORDER BY (status='active') DESC,rowid DESC LIMIT 500`,...(currentUser?[currentUser.id,currentUser.id]:[]));
   const trades=currentUser?all<{id:string;senderId:string;recipientId:string;offered:string;requested:string;status:Trade['status'];createdAt:string;resolvedAt:string|null}>('SELECT id,sender_id senderId,recipient_id recipientId,offered,requested,status,created_at createdAt,resolved_at resolvedAt FROM trades WHERE sender_id=? OR recipient_id=? ORDER BY rowid DESC LIMIT 200',userId!,userId!).map(t=>({...t,offered:JSON.parse(t.offered),requested:JSON.parse(t.requested)})) as Trade[]:[];
-  const cards=all<Card>('SELECT id,number,name,rarity,series_id seriesId,description,image,recycle_value recycleValue,collection_points collectionPoints FROM cards ORDER BY number LIMIT 10000');
+  const cards=all<Card>(`SELECT id,number,name,rarity,series_id seriesId,description,image,recycle_value recycleValue,collection_points collectionPoints FROM cards WHERE ${VISIBLE_CARDS_CONDITION} ORDER BY number LIMIT 10000`, ...HIDDEN_DUPLICATE_CARD_IDS);
   const events=all<GameEvent>('SELECT id,name,description,starts_at startsAt,ends_at endsAt,active,color,reward FROM events ORDER BY starts_at DESC LIMIT 100').map(e=>({...e,active:!!e.active}));
   return {version:'1',serverTime:now(),mode:isDevelopmentMode()?'development':'discord',discordConfigured:discordConfigured(),currentUser,users,cards,series:all<Series>('SELECT * FROM series ORDER BY rowid LIMIT 500'),inventory,boosters:boosterState(currentUser?.id||null),openings,ledger,listings,trades,achievements:achievementProgress(currentUser?.id||null),events,
     news:all<NewsItem>('SELECT id,title,body,kind,published_at publishedAt FROM news ORDER BY published_at DESC LIMIT 100'),rankings,
     priceHistory:all<PricePoint>('SELECT card_id cardId,unit_price unitPrice,quantity,sold_at soldAt FROM price_history ORDER BY sold_at DESC LIMIT 500'),
     acquisitions:currentUser?all<Acquisition>('SELECT id,card_id cardId,quantity,source,created_at createdAt,reference_id referenceId FROM acquisitions WHERE user_id=? ORDER BY rowid DESC LIMIT 500',userId!):[],
-    activities:all<Activity>('SELECT id,user_id userId,kind,message,created_at createdAt FROM activities ORDER BY rowid DESC LIMIT 100'),config:GAME_CONFIG};
+    activities:all<Activity>("SELECT id,user_id userId,kind,message,created_at createdAt FROM activities WHERE kind IN ('opening','achievement','market','trade','event') OR user_id=? ORDER BY rowid DESC LIMIT 100",userId||''),config:GAME_CONFIG};
 }

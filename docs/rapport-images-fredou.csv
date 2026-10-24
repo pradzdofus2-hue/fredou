@@ -1,0 +1,73 @@
+﻿card_number;nom;statut;gfxId;fichier_source
+1;Piou Rouge;OK;273;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\273.png
+2;Piou Bleu;OK;275;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\275.png
+3;Piou Vert;OK;274;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\274.png
+4;Tofu;AMBIGU;9,2521;
+5;Arakne;OK;15;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\15.png
+6;Boufton Blanc;OK;73;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\73.png
+7;Boufton Noir;OK;76;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\76.png
+8;Pissenlit Diabolique;OK;33;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\33.png
+9;Bouftou;AMBIGU;3,2523;
+10;Prespic;AMBIGU;7,53;
+11;Sanglier;OK;54;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\54.png
+12;Tournesol Sauvage;OK;14;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\14.png
+13;Chafer;OK;16;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\16.png
+14;Crâqueleur;OK;4;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\4.png
+15;Milimulou;OK;84;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\84.png
+16;Bwork;OK;489;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\489.png
+17;Bouftou Royal;OK;74;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\74.png
+18;Tofu Royal;OK;204;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\204.png
+19;Tournesol Affamé;OK;445;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\445.png
+20;Abraknyde Ancestral;OK;97;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\97.png
+21;Maître Corbac;OK;177;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\177.png
+22;Chêne Mou;OK;147;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\147.png
+23;Joris;ABSENT;;
+24;Ogrest;ABSENT;;
+25;Larve Bleue;OK;1;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\1.png
+26;Larve Verte;OK;2;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\2.png
+27;Porkass;ABSENT;;
+28;Scara Bleu;ABSENT;;
+29;Scara Rouge;ABSENT;;
+30;Scara Vert;ABSENT;;
+31;Blop Coco;OK;162;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\162.png
+32;Blop Reinette;OK;165;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\165.png
+33;Kanigrou;OK;175;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\175.png
+34;Koalak Sanguin;OK;411;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\411.png
+35;Gelée Royale Bleue;ABSENT;;
+36;Gelée Royale Rouge;ABSENT;;
+37;Meulou;OK;128;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\128.png
+38;Dragon Cochon;OK;60;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\60.png
+39;Dark Vlad;OK;650;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\650.png
+40;Minotoror;OK;67;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\67.png
+41;Minotot;OK;459;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\459.png
+42;Crocabulia;OK;479;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\479.png
+43;Goultard;ABSENT;;
+44;Otomaï;ABSENT;;
+45;Otomai;ABSENT;;
+46;Rushu;ABSENT;;
+47;Djaul;ABSENT;;
+48;Dieu Iop;ABSENT;;
+49;Boufmouth;OK;771;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\771.png
+50;Boufmouth de Guerre;OK;772;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\772.png
+51;Mansot;ABSENT;;
+52;Mansot Royal;OK;769;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\769.png
+53;Kani Glours;ABSENT;;
+54;Sanglacier;OK;766;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\766.png
+55;Krakal;OK;972;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\972.png
+56;Fu Mansot;OK;779;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\779.png
+57;Royalmouth;OK;775;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\775.png
+58;Ben le Ripate;OK;794;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\794.png
+59;Obsidiantre;OK;825;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\825.png
+60;Tengu Givrefoux;OK;840;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\840.png
+61;Korriandre;OK;841;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\841.png
+62;Kolossos;ABSENT;;
+63;Glourséleste;OK;785;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\785.png
+64;N;ABSENT;;
+65;Missiz Frizz;OK;970;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\970.png
+66;Nileza;OK;976;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\976.png
+67;Sylargh;OK;986;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\986.png
+68;Klime;OK;964;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\964.png
+69;Comte Harebourg;OK;993;C:\Users\Nitropc\Desktop\fredou-dofus-assets\monsters\2x\993.png
+70;Harebourg le Comte;ABSENT;;
+71;Dofus des Glaces;ABSENT;;
+72;Dieu Xélor;ABSENT;;

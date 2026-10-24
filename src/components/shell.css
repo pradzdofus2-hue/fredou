@@ -155,3 +155,8 @@
 @media(max-width:360px){.fc-hero-content h1{font-size:26px}.fc-hero-primary{font-size:12px}.fc-hero-eyebrow{font-size:7px}.fc-hero-eyebrow span{font-size:7px}.fc-hero-card{width:99px;height:139px;left:calc(50% - 49px);top:12px}.fc-hero-card-0{transform:translate(-66px,10px) rotate(-9deg)}.fc-hero-card-2{transform:translate(66px,10px) rotate(9deg)}}
 
 .initial-loading{--fc-heading:'FC Unbounded',Arial,sans-serif;--fc-body:'FC Zen',Arial,sans-serif}
+
+/* Krosmoria header logo: desktop and small screens */
+.fc-brand-logo{display:block;width:186px;height:auto;max-height:57px;object-fit:contain}
+@media(max-width:860px){.fc-brand-logo{width:160px;max-height:52px}}
+@media(max-width:560px){.fc-header-inner .fc-brand-logo{width:49px;height:47px;object-fit:cover;object-position:left;max-height:47px}}
