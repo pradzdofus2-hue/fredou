@@ -16,6 +16,16 @@ Il lance la lecture du catalogue, le contrôle des 2 467 illustrations référen
 ## Assets
 L'audit local `npm run art:check` a été rapporté comme réussi (2467 fichiers uniques, aucun manquant). Le contrôle GitHub Actions des images du catalogue de démonstration est aussi passé (exécutions #73 et #74), mais ne vérifie pas encore toutes les 4833 cartes du catalogue Supabase. Vérifier le catalogue intégral et les réponses HTTP des images sur la préproduction avant ouverture.
 
+## Audit Vercel constaté le 24 octobre 2026
+- Le projet existant **`fredouu`** est accessible par son nom via la connexion Vercel ; projet `prj_1sK5IzdYXPcEy54jFwzF6vd6F9TX`.
+- Son dernier déploiement connu est `READY`, mais basé sur **`pradzdofus2-hue/fredouu`, branche `main`, ancien commit `e2c52e0`**. Ce n'est **pas** le dépôt du nouveau FREDOU (`pradzdofus2-hue/fredou`, `feature/dofus-catalogue`).
+- L'API du projet affiche **zéro variable d'environnement** ; les secrets PostgreSQL et Discord ne sont donc pas configurés pour ce projet.
+- Le domaine connu est **`fredouu.vercel.app`**. La protection SSO est activée pour les déploiements non personnalisés ; vérifier l'accès à la préproduction avant les tests de navigation.
+- **Action dans Vercel** : choisir le projet `fredouu` → Settings → Git et vérifier/modifier sa connexion Git vers `pradzdofus2-hue/fredou`. Vérifier ensuite Production Branch et les déploiements de préproduction ; ne pas publier depuis une branche erronée.
+- **Action dans Environment Variables** : configurer sans jamais les écrire dans GitHub `APP_URL`, `DATABASE_URL` (Session Pooler Supabase), `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` et l'URI de redirection Discord ; faire correspondre `APP_URL` au domaine HTTPS testé.
+- Laisser les bascules `PG_AUTH_ENABLED`, `PG_STATE_ENABLED` et `PG_GAME_ACTIONS_ENABLED` désactivées tant que la connexion réelle à la base n'est pas validée. Les activer **ensemble** uniquement lorsque le déploiement correspondant est prêt, car les routes hébergées refusent de basculer automatiquement sur SQLite.
+- Le workflow automatique GitHub **#194 et #195 a réussi**, y compris PostgreSQL temporaire, tests navigateur et illustrations : ce succès ne prouve pas la configuration réelle du déploiement Vercel.
+
 ## Vercel (avant publication)
 - Relier le projet Vercel `fredouu` au dépôt GitHub `pradzdofus2-hue/fredou`.
 - Déployer d'abord une préproduction depuis `feature/dofus-catalogue`, puis tester avant toute promotion vers la production.
@@ -33,6 +43,6 @@ L'audit local `npm run art:check` a été rapporté comme réussi (2467 fichiers
 2. Vérification de toutes les illustrations du catalogue Supabase et de leur livraison depuis le site public encore nécessaire.
 3. Le routage principal des actions PostgreSQL est implémenté, mais l'authentification Discord réelle et le parcours navigateur avec PostgreSQL activé n'ont pas été validés sur Vercel.
 4. Playwright local/CI validé, mais aucune validation E2E complète sur le déploiement Vercel.
-5. La connexion Vercel actuellement disponible n'a pas accès au projet `fredouu` (projet introuvable, lecture des déploiements interdite) : confirmer l'équipe propriétaire et les autorisations Vercel avant de demander un déploiement.
+5. Le projet Vercel `fredouu` est désormais consultable, mais il utilise encore l'ancien dépôt `fredouu` et ne possède aucune variable d'environnement : raccorder le bon dépôt et configurer les secrets avant un déploiement.
 
 **Ne pas considérer le projet prêt pour un lancement public tant que ces points restent ouverts.**
