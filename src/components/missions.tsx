@@ -1,6 +1,7 @@
 'use client';
 import {useCallback,useEffect,useState} from 'react';
 import {useGame} from './game-context';
+import {PermanentSuccesses} from './permanent-successes';
 type Mission={id:string;title:string;description:string;period:'daily'|'weekly';metric:string;target:number;reward:number;active:boolean;progress:number;claimed:boolean};
 type Data={missions:Mission[];admin:boolean;serverTime:string};
 const metrics=[['openings','Boosters ouverts'],['listings','Annonces créées'],['sales','Cartes vendues'],['acquisitions','Cartes obtenues'],['legendary','Légendaires obtenues']];
@@ -32,5 +33,6 @@ export function MissionsPage(){
  <button className="button primary" disabled={busy}>Créer la mission</button></form>
  <h3 style={{marginTop:24}}>Missions personnalisées</h3>{data.missions.filter(m=>m.id.startsWith('custom-')).map(m=><div key={m.id} style={{display:'flex',alignItems:'center',gap:12,margin:'10px 0'}}><span style={{flex:1}}>{m.title} · {m.target} · +{m.reward} ◆</span><button className="button secondary small" disabled={busy} onClick={()=>void action({action:'toggle',id:m.id,active:!m.active})}>{m.active?'Désactiver':'Activer'}</button></div>)}
  </section>}
+ <PermanentSuccesses/>
  </main>;
 }
