@@ -63,4 +63,11 @@ export const DOFUS_IMAGES: Record<string, string> = {
   'card-70': '/art/dofus/70.png', // Comte Harebourg, gfxId 993
   'card-71': '/art/dofus/71.png', // Dofus des Glaces, iconId 23005
   'card-62': '/art/dofus/62.png', // Kolosso, MonsterData id 2986, gfxId 849
+  'card-43': '/art/dofus/43.png', // Goultard
+  'card-44': '/art/dofus/44.png', // Otomaï
+  'card-46': '/art/dofus/46.png', // Rushu
+  'card-47': '/art/dofus/47.png', // Djaul
+  'card-48': '/art/dofus/48.png', // Dieu Iop
+  'card-64': '/art/dofus/64.png', // N
+  'card-72': '/art/dofus/72.png', // Dieu Xélor
 };
