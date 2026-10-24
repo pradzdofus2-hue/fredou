@@ -115,6 +115,18 @@ async function main() {
    assert.equal(giftsAfterReplay.length,2);
    assert.deepEqual(new Set(giftsAfterReplay.map(x=>x.user_id)),new Set([one.id,two.id]));
 
+   // Late referral: three prior openings must grant exactly one award at registration.
+   const late=await findOrCreateDiscordPlayer({discordId:'993'+randomUUID().replaceAll('-','').slice(0,22),username:'PG Test Late',avatar:null});
+   testIds.push(late.id);
+   for(let i=0;i<3;i++) await openPgBooster(late.id,'free',randomUUID());
+   const lateReferral=await pgReferral(late.id,{type:'referral',code:ref[0].referral_code},randomUUID());
+   assert.equal(lateReferral.type,'referral');
+   const lateRewards=await pgRead<{n:number}>('SELECT COUNT(*)::integer n FROM referral_rewards WHERE referred_id=$1',[late.id]);
+   assert.equal(lateRewards[0].n,1);
+   const lateLedger=await pgRead<{user_id:string;amount:number}>(
+    'SELECT user_id,amount FROM ledger WHERE reference_id=$1 AND reason=$2',[late.id,'Parrainage confirmé']);
+   assert.equal(lateLedger.length,2);
+   assert.ok(lateLedger.every(x=>x.amount===100));
    // Admin-only event actions must not be available to a regular player.
    await assert.rejects(pgSaveEvent(one.id,{type:'event-save',name:'Test',description:'Test',startsAt:new Date().toISOString(),endsAt:new Date(Date.now()+86400000).toISOString(),active:false,color:'#000000',reward:0},randomUUID()));
    // Positive admin path: temporary event is rolled back with the rest of this suite.
