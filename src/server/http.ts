@@ -75,6 +75,9 @@ export function errorResponse(error: unknown): Response {
   }
   const incident=randomUUID();
   // No request bodies, cookies, tokens or stack traces in routine logs.
-  console.error('[fredou]',incident,error instanceof Error? error.name:'UnknownError');
+  const detail = error && typeof error === 'object' ? error as Record<string,unknown> : {};
+  const safeCode = typeof detail.code === 'string' && /^[A-Z0-9_]{2,16}$/.test(detail.code) ? detail.code : 'NONE';
+  const safeConstraint = typeof detail.constraint === 'string' && /^[a-zA-Z0-9_]{1,80}$/.test(detail.constraint) ? detail.constraint : 'NONE';
+  console.error('[fredou]',incident,'type=',error instanceof Error?error.name:'UnknownError','dbCode=',safeCode,'constraint=',safeConstraint);
   return json({error:{code:'INTERNAL_ERROR',message:`Erreur interne. Référence ${incident.slice(0,8)}.`}} satisfies ErrorResponse,500);
 }
