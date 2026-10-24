@@ -116,6 +116,27 @@ function OpeningExperience({ booster, opening, replay, close, again }: Encounter
   const root = useRef<HTMLDivElement>(null), closeRef = useRef(close), nextLock = useRef(false); closeRef.current = close;
   const stage = animation.phase, cards = opening.cards.map(draw => ({ draw, card: state.cards.find(card => card.id === draw.cardId)! }));
   const latest = state.boosters.find(b => b.id === booster.id), highlighted = animation.flipping === null ? null : cards[animation.flipping]?.card;
+  // A flip emits one sound, chosen from the server-assigned card rarity.
+  const playedFlips = useRef(new Set<number>());
+  const flipAudio = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    const index = animation.flipping;
+    if (stage !== 'reveal' || index === null || playedFlips.current.has(index)) return;
+    playedFlips.current.add(index);
+    const rarity = cards[index]?.card.rarity;
+    const files = ['commune', 'peu-commune', 'rare', 'epique', 'legendaire', 'mythique'];
+    const name = typeof rarity === 'number' ? files[rarity] : undefined;
+    if (!name) return;
+    try {
+      flipAudio.current?.pause();
+      const audio = new Audio('/sounds/' + name + '.ogg');
+      audio.volume = 0.65;
+      flipAudio.current = audio;
+      void audio.play().catch(() => {});
+    } catch { /* Sound is optional and never blocks the reveal. */ }
+  }, [animation.flipping, stage]);
+  useEffect(() => () => { flipAudio.current?.pause(); }, []);
+
   useEffect(() => {
     const oldOverflow = document.body.style.overflow, previousFocus = document.activeElement as HTMLElement | null;
     const siblings = Array.from(document.body.children).filter((element): element is HTMLElement => element instanceof HTMLElement && element !== root.current).map(element => ({ element, inert: element.inert }));
@@ -159,7 +180,7 @@ function OpeningExperience({ booster, opening, replay, close, again }: Encounter
         {stage === 'reveal' && <><p>{highlighted && highlighted.rarity >= 4 ? <span className="fc-opening-extraordinary" style={{ color: state.config.rarities[highlighted.rarity].color }}><Sparkles size={18} /> Une rencontre {state.config.rarities[highlighted.rarity].name.toLowerCase()}.</span> : animation.automatic ? 'Chaque découverte prend sa place…' : 'Touchez la prochaine carte pour la révéler.'}</p><button className="fc-opening-secondary" disabled={animation.automatic} onClick={() => dispatch({ type: 'AUTOMATIC' })}><Sparkles size={16} /> Tout révéler</button></>}
         {stage === 'summary' && <><div className="fc-opening-reward"><span><Check size={17} /> {replay ? 'Récompenses déjà reçues' : 'Collection mise à jour'}</span><Shards value={`+${opening.shardsReward}`} />{opening.pityTriggered && <b><Sparkles size={13} /> Pitié mythique</b>}</div><div className="fc-opening-summary-stats"><span>{opening.cards.filter(card => card.isNew).length} nouvelle(s) carte(s)</span><i /><span>{opening.cards.filter(card => !card.isNew).length} doublon(s)</span></div><div className="fc-opening-buttons"><button className="fc-opening-secondary" onClick={close}><ArrowLeft size={16} /> Retour aux boosters</button><button className="fc-booster-primary" disabled={busy || !latest?.available || !latest.active} onClick={() => void next()}>{busy ? <LoaderCircle className="fc-booster-spinner" size={16} /> : <RotateCcw size={16} />} Ouvrir à nouveau</button></div></>}
       </div>
-    </div><span className="fc-opening-footnote">FREDOU COLLECTION · {replay ? formatDate(opening.createdAt) : 'VOTRE HISTOIRE CONTINUE'}</span>
+    </div><span className="fc-opening-footnote">KROSMORIA · {replay ? formatDate(opening.createdAt) : 'VOTRE HISTOIRE CONTINUE'}</span>
   </div>, document.body);
 }
 
