@@ -13,10 +13,11 @@ Write-Host "Attention : import dans Supabase des cartes/series/boosters seulemen
 $answer = Read-Host "Confirmer l'import du catalogue dans le projet fredou ? (OUI)"
 if ($answer -cne "OUI") { Write-Host "Operation annulee."; exit 0 }
 
-if (-not (python -c "import psycopg" 2>$null)) {
-    # Python's import prints nothing on success; rely on LASTEXITCODE.
-}
+# Install the Python driver without relying on stderr handling in Windows PowerShell 5.1.
+Write-Host "Verification du pilote PostgreSQL..." -ForegroundColor Cyan
+python -m pip show psycopg *> $null
 if ($LASTEXITCODE -ne 0) {
+    Write-Host "Installation de psycopg..." -ForegroundColor Cyan
     python -m pip install "psycopg[binary]"
     if ($LASTEXITCODE -ne 0) { throw "Installation de psycopg echouee" }
 }
