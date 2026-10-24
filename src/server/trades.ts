@@ -47,6 +47,7 @@ export function respondTrade(userId:string,tradeId:string,decision:'accept'|'rej
     logActivity(trade.sender_id,'trade','Échange accepté : les cartes ont été transférées.');
     logActivity(trade.recipient_id,'trade','Échange accepté : les cartes ont été transférées.');
     evaluateAchievements(trade.sender_id);
+    evaluateAchievements(trade.recipient_id);
   }
   getDb().prepare('UPDATE trades SET status=?,resolved_at=? WHERE id=?').run(decision==='accept'?'accepted':decision==='reject'?'rejected':'cancelled',now(),tradeId);
   return {type:'trade-respond',message:decision==='accept'?'Échange accepté. Les deux collections ont été mises à jour.':decision==='reject'?'Proposition refusée.':'Proposition annulée.',entityId:tradeId};
