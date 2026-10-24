@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useMemo,useState} from 'react';
 import {useGame} from './game-context';
-import {CardTile,PageIntro} from './primitives';
+import {PageIntro} from './primitives';
 type Studio={wishlist:string[];cosmetic:{title:string;banner:string;featured_card:string|null};season:{key:string;xp:number;level:number;claimed:number[]};titles:string[];banners:string[]};
 const costs=[150,350,800,1800];
 export function CollectionStudioPage(){
@@ -15,7 +15,7 @@ export function CollectionStudioPage(){
  const cards=data?.wishlist.map(id=>state.cards.find(c=>c.id===id)).filter((c):c is (typeof state.cards)[number]=>!!c)||[];
  const choose=state.cards.find(c=>c.id===selected);
  const featuredCards=state.cards.filter(c=>owned.has(c.id)).slice(0,100);
- return <div className="fc-studio"><PageIntro eyebrow="NOUVEAU • KROSMORIA" title="Atelier du collectionneur" description="Des récompenses de saison, une forge, tes souhaits et un profil qui te ressemble."/>
+ return <div className="fc-studio"><PageIntro eyebrow="NOUVEAU • KROSMORIA" title="Atelier du collectionneur" text="Des récompenses de saison, une forge, tes souhaits et un profil qui te ressemble."/>
  {error&&<p role="alert" className="fc-studio-error">{error}</p>}{!data?<p>Chargement de ton atelier…</p>:<>
  <section className="fc-studio-panel"><h2>✦ Passe de saison gratuit — {data.season.key}</h2><p>Ouvre des boosters pour progresser : 3 ouvertures = 1 niveau. La saison change chaque mois.</p><div className="fc-studio-level"><strong>Niveau {data.season.level}/30</strong><span>{data.season.xp} ouvertures cette saison</span></div><div className="fc-studio-rewards">{Array.from({length:30},(_,i)=>i+1).map(n=><button key={n} disabled={pending||n>data.season.level||data.season.claimed.includes(n)} onClick={()=>doAction('season',{level:n})}><strong>{n}</strong><span>{data.season.claimed.includes(n)?'✓ Récupéré':n>data.season.level?'Verrouillé':(50+n*10)+' fragments'}</span></button>)}</div></section>
  <section className="fc-studio-panel"><h2>✦ Profil personnalisable</h2><p>Choisis un titre, une bannière et une carte de collection à afficher.</p><div className={'fc-studio-banner fc-studio-banner-'+banner}><strong>{state.currentUser.username}</strong><span>{title}</span>{featured&&<img src={state.cards.find(c=>c.id===featured)?.image} alt="Carte mise à l'honneur" loading="lazy"/>}</div><div className="fc-studio-controls"><label>Titre<select value={title} onChange={e=>setTitle(e.target.value)}>{data.titles.map(x=><option key={x}>{x}</option>)}</select></label><label>Bannière<select value={banner} onChange={e=>setBanner(e.target.value)}>{data.banners.map(x=><option key={x} value={x}>{({astral:'Astrale',royal:'Royale',forest:'Sylvestre',ember:'Braise'} as Record<string,string>)[x]}</option>)}</select></label><label>Carte mise en avant<select value={featured} onChange={e=>setFeatured(e.target.value)}><option value="">Aucune</option>{featuredCards.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label></div><button className="button primary" disabled={pending} onClick={()=>doAction('cosmetic',{title,banner,cardId:featured})}>Enregistrer mon profil</button></section>
