@@ -1,10 +1,11 @@
-# Import supplemental monster assets according to the verified CSV. Non-destructive.
+# Copy supplementary verified images into FREDOU. No database modifications.
 param([string]$AssetsRoot = (Join-Path $HOME 'Desktop\fredou-dofus-assets'))
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $dest = Join-Path $root 'public\art\dofus'
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
-$rows = @(Import-Csv -Delimiter ';' -Encoding UTF8 (Join-Path $root 'docs\rapport-images-complement.csv'))
+$report = Join-Path $root 'docs\rapport-images-complement.csv'
+$rows = @(Import-Csv -LiteralPath $report -Delimiter ';' -Encoding UTF8)
 $copied = 0
 $missing = @()
 foreach ($entry in $rows) {
@@ -24,7 +25,7 @@ foreach ($entry in $rows) {
 }
 Write-Host "Complements copies : $copied / $($rows.Count)" -ForegroundColor Green
 if ($missing.Count -gt 0) {
-  Write-Host "Sources absentes :"
+  Write-Host 'Sources absentes :'
   $missing | ForEach-Object { Write-Host " - $_" }
 }
-Write-Host 'Les images doivent etre utilisees selon les droits applicables avant publication.'
+Write-Host 'Verifier les droits de redistribution avant publication.'
