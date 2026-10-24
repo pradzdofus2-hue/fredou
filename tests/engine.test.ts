@@ -261,13 +261,13 @@ test('tampered pending trade rejects invalid quantities and never transfers card
  db.prepare('INSERT INTO inventory(user_id,card_id,quantity,favorite,first_obtained_at,last_obtained_at) VALUES(?,?,1,0,?,?)').run(b,'card-2',date,date);
  const trade=run(a,{type:'trade-create',recipientId:b,offered:[{cardId:'card-1',quantity:1}],requested:[{cardId:'card-2',quantity:1}]});
  for(const quantity of [0,-1,1.5]){
-  db.prepare('UPDATE trades SET offered=? WHERE id=?').run(JSON.stringify([{cardId:'card-1',quantity}]),trade.entityId);
+  db.prepare('UPDATE trades SET offered=? WHERE id=?').run(JSON.stringify([{cardId:'card-1',quantity}]),trade.entityId!);
   assert.throws(()=>run(b,{type:'trade-respond',tradeId:trade.entityId!,decision:'accept'}));
   assert.equal(engine.getState(b).trades.find(t=>t.id===trade.entityId)?.status,'pending');
   assert.equal(engine.getState(a).inventory.find(i=>i.cardId==='card-1')?.quantity,1);
   assert.equal(engine.getState(b).inventory.find(i=>i.cardId==='card-2')?.quantity,1);
  }
- db.prepare('UPDATE trades SET offered=? WHERE id=?').run(JSON.stringify([{cardId:'card-1',quantity:1}]),trade.entityId);
+ db.prepare('UPDATE trades SET offered=? WHERE id=?').run(JSON.stringify([{cardId:'card-1',quantity:1}]),trade.entityId!);
  run(b,{type:'trade-respond',tradeId:trade.entityId!,decision:'accept'});
  assert.equal(engine.getState(b).trades.find(t=>t.id===trade.entityId)?.status,'accepted');
 });
