@@ -33,8 +33,8 @@ export function pgPool(): Pool {
 }
 
 export async function pgAll<T extends QueryResultRow>(query: string, params: unknown[] = []): Promise<T[]> {
-  const result = await pgPool().query<T>(query, params);
-  return result.rows;
+  // Every query uses the private fredou schema, including SELECTs.
+  return pgRead<T>(query, params);
 }
 
 export async function pgOne<T extends QueryResultRow>(query: string, params: unknown[] = []): Promise<T | undefined> {
