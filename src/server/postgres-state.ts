@@ -1,4 +1,3 @@
-import 'server-only';
 import type { PoolClient } from 'pg';
 import type { StateResponse, PublicUser, CurrentUser, Rankings, RankingMetric, Booster, Achievement, Opening, Trade } from '../lib/contracts';
 import { pgTransaction } from './postgres';
