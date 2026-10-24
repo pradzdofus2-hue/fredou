@@ -1,4 +1,3 @@
-import 'server-only';
 import { cookieValue, SESSION_COOKIE } from './auth';
 import { getPgSessionUser } from './postgres-auth';
 import { pgRead } from './postgres';
