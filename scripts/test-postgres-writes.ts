@@ -182,7 +182,14 @@ async function main() {
      UNION ALL SELECT 'listings',COUNT(*)::integer FROM listings WHERE seller_id=ANY($1::text[]) OR buyer_id=ANY($1::text[])
      UNION ALL SELECT 'trades',COUNT(*)::integer FROM trades WHERE sender_id=ANY($1::text[]) OR recipient_id=ANY($1::text[])
      UNION ALL SELECT 'idempotency',COUNT(*)::integer FROM idempotency WHERE user_id=ANY($1::text[])
-     UNION ALL SELECT 'acquisitions',COUNT(*)::integer FROM acquisitions WHERE user_id=ANY($1::text[])`,[testIds]);
+     UNION ALL SELECT 'acquisitions',COUNT(*)::integer FROM acquisitions WHERE user_id=ANY($1::text[])
+     UNION ALL SELECT 'sessions',COUNT(*)::integer FROM sessions WHERE user_id=ANY($1::text[])
+     UNION ALL SELECT 'activities',COUNT(*)::integer FROM activities WHERE user_id=ANY($1::text[])
+     UNION ALL SELECT 'user_achievements',COUNT(*)::integer FROM user_achievements WHERE user_id=ANY($1::text[])
+     UNION ALL SELECT 'user_boosters',COUNT(*)::integer FROM user_boosters WHERE user_id=ANY($1::text[])
+     UNION ALL SELECT 'referral_rewards',COUNT(*)::integer FROM referral_rewards WHERE referred_id=ANY($1::text[]) OR referrer_id=ANY($1::text[])
+     UNION ALL SELECT 'event_rewards',COUNT(*)::integer FROM event_rewards WHERE user_id=ANY($1::text[])
+     UNION ALL SELECT 'price_history',COUNT(*)::integer FROM price_history ph JOIN listings l ON ph.listing_id=l.id WHERE l.seller_id=ANY($1::text[]) OR l.buyer_id=ANY($1::text[])`,[testIds]);
    assert.ok(dependencies.every(x=>x.n===0),'Rollback incomplet : lignes de jeu temporaires conservées');
   }
   if (testEventIds.length) {
