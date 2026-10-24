@@ -128,10 +128,16 @@ async function main() {
    const state=await pgState(one.id);
    assert.equal(state.currentUser?.id,one.id);
    assert.ok(state.openings.length>0);
+   // Deleting an account must cancel outstanding listings, not leave buyable orphaned offers.
+   const pendingSale=await pgListingAction(two.id,{type:'listing-create',cardId:selected,quantity:1,price:12},randomUUID());
+   assert.ok(pendingSale.entityId);
    const removed=await deletePgAccount(two.id,'PG Test 2');
    assert.equal(removed.type,'account-delete');
    const vanished=await pgRead<{id:string}>('SELECT id FROM users WHERE id=$1',[two.id]);
    assert.equal(vanished.length,0);
+   const canceled=await pgRead<{status:string;seller_id:string|null}>('SELECT status,seller_id FROM listings WHERE id=$1',[pendingSale.entityId]);
+   assert.equal(canceled[0]?.status,'cancelled');
+   assert.equal(canceled[0]?.seller_id,null);
    console.log('PG WRITE OK : comptes, ouverture/rejeu, achat booster, marché, échange, inventaire, état joueur.');
   });
   } catch (error) { testError=error; }
