@@ -17,7 +17,11 @@ async function snapshot(db:import('pg').PoolClient,id:string){
  const claimed=(await db.query<{level:number}>('SELECT level FROM season_claims WHERE user_id=$1 AND season_key=$2',[id,key])).rows.map(x=>x.level);
  return {wishlist,cosmetic,season:{key,xp,level:Math.min(30,Math.floor(xp/3)),claimed},titles,banners};
 }
-export async function GET(request:Request){try{const id=await logged(request);return json(await pgTransaction(db=>snapshot(db,id)));}catch(e){return errorResponse(e);}}
+export async function GET(request:Request){try{
+ const player=new URL(request.url).searchParams.get('player');
+ if(player){if(player.length>100)return json({error:'Invalid player'},400);return json(await pgTransaction(async db=>({cosmetic:(await db.query<{title:string;banner:string;featured_card:string|null}>('SELECT title,banner,featured_card FROM player_cosmetics WHERE user_id=$1',[player])).rows[0]||{title:'Collectionneur',banner:'astral',featured_card:null}})));}
+ const id=await logged(request);return json(await pgTransaction(db=>snapshot(db,id)));
+ }catch(e){return errorResponse(e);}}
 export async function POST(request:Request){
  try{validateOrigin(request);const id=await logged(request);const body=await request.json();
   if(!body||typeof body!=='object'||typeof body.action!=='string')throw new HttpError('VALIDATION_ERROR','Requête invalide.',422);
