@@ -98,6 +98,14 @@ async function main() {
    const gifts=await pgRead<{user_id:string;amount:number}>('SELECT user_id,amount FROM ledger WHERE reference_id=$1 AND reason=$2',[one.id,'Parrainage confirmé']);
    assert.equal(gifts.length,2);
    assert.ok(gifts.every(x=>x.amount===100));
+   const rewardedOnce=await pgRead<{n:number}>('SELECT COUNT(*)::integer n FROM referral_rewards WHERE referred_id=$1',[one.id]);
+   assert.equal(rewardedOnce[0].n,1);
+   // Extra premium opening must never grant the referral payout a second time.
+   await openPgBooster(one.id,'premium',randomUUID());
+   const giftsAfterReplay=await pgRead<{user_id:string;amount:number}>('SELECT user_id,amount FROM ledger WHERE reference_id=$1 AND reason=$2',[one.id,'Parrainage confirmé']);
+   assert.equal(giftsAfterReplay.length,2);
+   assert.deepEqual(new Set(giftsAfterReplay.map(x=>x.user_id)),new Set([one.id,two.id]));
+
    // Admin-only event actions must not be available to a regular player.
    await assert.rejects(pgSaveEvent(one.id,{type:'event-save',name:'Test',description:'Test',startsAt:new Date().toISOString(),endsAt:new Date(Date.now()+86400000).toISOString(),active:false,color:'#000000',reward:0},randomUUID()));
    // Positive admin path: temporary event is rolled back with the rest of this suite.
