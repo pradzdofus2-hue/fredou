@@ -18,7 +18,8 @@
     "test:concurrency": "tsx --test tests/concurrency.test.ts",
     "test:e2e": "node scripts/browser-tests.mjs",
     "verify": "npm run typecheck && npm test && npm run build",
-    "db:check:postgres": "tsx scripts/check-postgres.ts"
+    "db:check:postgres": "tsx scripts/check-postgres.ts",
+    "db:check:runtime": "tsx scripts/check-postgres-runtime.ts"
   },
   "dependencies": {
     "next": "16.4.3",
