@@ -221,3 +221,33 @@ test('guest activity feed excludes private economy and referrals while owners re
  assert.ok(owner.some(a=>a.id===inserted[0].id),'Owner should see own purchases');
  assert.ok(owner.some(a=>a.id===inserted[1].id),'Owner should see own referral history');
 });
+
+ 
+test('SQLite trade awards ten-unique achievement to receiving player exactly once',()=>{
+ const db=database.getDb();
+ const sender=database.createUser({username:'Milestone sender'});
+ const recipient=database.createUser({username:'Milestone recipient'});
+ const cards=db.prepare('SELECT id FROM cards WHERE rarity=0 AND recycle_value=1 ORDER BY id LIMIT 10').all() as {id:string}[];
+ assert.equal(cards.length,10);
+ const date=new Date().toISOString();
+ for(let i=0;i<9;i++){
+  db.prepare('INSERT INTO inventory(user_id,card_id,quantity,favorite,first_obtained_at,last_obtained_at) VALUES(?,?,?,0,?,?)')
+   .run(recipient,cards[i].id,i===0?2:1,date,date);
+ }
+ db.prepare('INSERT INTO inventory(user_id,card_id,quantity,favorite,first_obtained_at,last_obtained_at) VALUES(?,?,1,0,?,?)')
+  .run(sender,cards[9].id,date,date);
+ assert.equal(engine.getState(recipient).currentUser!.uniqueCards,9);
+ const before=engine.getState(recipient).currentUser!.balance;
+ const trade=run(sender,{type:'trade-create',recipientId:recipient,
+  offered:[{cardId:cards[9].id,quantity:1}],requested:[{cardId:cards[0].id,quantity:1}]});
+ run(recipient,{type:'trade-respond',tradeId:trade.entityId!,decision:'accept'});
+ const after=engine.getState(recipient);
+ assert.equal(after.currentUser!.uniqueCards,10);
+ const achievement=after.achievements.find(x=>x.id==='ten-unique');
+ assert.ok(achievement?.unlockedAt,'Recipient must earn the ten-unique success');
+ assert.equal(after.currentUser!.balance,before+achievement!.reward);
+ const grants=db.prepare('SELECT COUNT(*) n FROM ledger WHERE user_id=? AND reference_id=?').get(recipient,'ten-unique') as {n:number};
+ assert.equal(grants.n,1);
+ assert.throws(()=>run(recipient,{type:'trade-respond',tradeId:trade.entityId!,decision:'accept'}));
+ assert.equal((db.prepare('SELECT COUNT(*) n FROM ledger WHERE user_id=? AND reference_id=?').get(recipient,'ten-unique') as {n:number}).n,1);
+});
