@@ -98,8 +98,8 @@ async function main() {
    for(const quantity of [0,-1,1.5]){
     await pgRead('UPDATE trades SET offered=$1 WHERE id=$2',[JSON.stringify([{cardId:swap[0].id,quantity}]),trade.entityId]);
     await assert.rejects(pgTradeAction(two.id,{type:'trade-respond',tradeId:trade.entityId!,decision:'accept'},randomUUID()));
-    const pending=await pgRead<{status:string}>('SELECT status FROM trades WHERE id=$1',[trade.entityId]);
-    assert.equal(pending[0].status,'pending','Invalid quantities must not resolve or transfer a trade');
+    const pendingTradeRows: {status:string}[]=await pgRead<{status:string}>('SELECT status FROM trades WHERE id=$1',[trade.entityId]);
+    assert.equal(pendingTradeRows[0].status,'pending','Invalid quantities must not resolve or transfer a trade');
    }
    await pgRead('UPDATE trades SET offered=$1 WHERE id=$2',[JSON.stringify([{cardId:swap[0].id,quantity:1}]),trade.entityId]);
    const accepted=await pgTradeAction(two.id,{type:'trade-respond',tradeId:trade.entityId!,decision:'accept'},randomUUID());
