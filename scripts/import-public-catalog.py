@@ -51,6 +51,8 @@ def main():
                     cur.execute("SELECT to_regclass('fredou.cards')")
                     if cur.fetchone()[0] is None:
                         raise RuntimeError("Schéma fredou absent; import annulé.")
+                    # Acquire a transaction-scoped lock so concurrent imports cannot race.
+                    cur.execute("SELECT pg_advisory_xact_lock(18122026, 24)")
                     for table in TABLES:
                         cur.execute(sql.SQL("SELECT COUNT(*) FROM fredou.{}").format(sql.Identifier(table)))
                         if cur.fetchone()[0]:
@@ -63,7 +65,7 @@ def main():
                             sql.SQL(", ").join(sql.Identifier(c) for c in columns),
                             sql.SQL(", ").join(sql.Placeholder() for _ in columns)
                         )
-                        for _ in range(1000000):
+                        while True:
                             rows = cursor.fetchmany(500)
                             if not rows:
                                 break
