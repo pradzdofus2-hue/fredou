@@ -17,6 +17,7 @@ import { pgSaveEvent } from '../src/server/postgres-events';
 async function main() {
  if (!process.env.DATABASE_URL && !process.env.SUPABASE_DB_URL) throw Error('URI PostgreSQL requise.');
  const testIds:string[]=[];
+ const testEventIds:string[]=[];
  let testError:unknown;
  try {
   try {
@@ -104,6 +105,7 @@ async function main() {
    const eventAction={type:'event-save' as const,name:'Intégration temporaire',description:'test',startsAt:new Date().toISOString(),endsAt:new Date(Date.now()+86400000).toISOString(),active:false,color:'#224466',reward:25};
    const eventSaved=await pgSaveEvent(one.id,eventAction,randomUUID());
    assert.ok(eventSaved.entityId);
+   testEventIds.push(eventSaved.entityId!);
    const eventRow=await pgRead<{name:string}>('SELECT name FROM events WHERE id=$1',[eventSaved.entityId]);
    assert.equal(eventRow[0].name,eventAction.name);
    const state=await pgState(one.id);
@@ -127,6 +129,10 @@ async function main() {
      UNION ALL SELECT 'idempotency',COUNT(*)::integer FROM idempotency WHERE user_id=ANY($1::text[])
      UNION ALL SELECT 'acquisitions',COUNT(*)::integer FROM acquisitions WHERE user_id=ANY($1::text[])`,[testIds]);
    assert.ok(dependencies.every(x=>x.n===0),'Rollback incomplet : lignes de jeu temporaires conservées');
+  }
+  if (testEventIds.length) {
+   const leftoverEvents=await pgRead<{id:string}>('SELECT id FROM events WHERE id=ANY($1::text[])',[testEventIds]);
+   assert.equal(leftoverEvents.length,0,'Rollback incomplet : événement de test conservé');
   }
   console.log('ROLLBACK OK : aucun compte, inventaire, achat, annonce ni échange de test conservé.');
   if(testError) throw testError;
