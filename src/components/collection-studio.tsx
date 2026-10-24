@@ -7,7 +7,7 @@ import {PageIntro} from './primitives';
 type Studio={wishlist:string[];cosmetic:{title:string;banner:string;featured_card:string|null};season:{key:string;xp:number;level:number;claimed:number[]};titles:string[];banners:string[]};
 const costs=[150,350,800,1800];
 export function CollectionStudioPage(){
- const {state,notify}=useGame();
+ const {state,notify,refresh}=useGame();
  const [data,setData]=useState<Studio|null>(null),[error,setError]=useState(''),[pending,setPending]=useState(false),[query,setQuery]=useState(''),[selected,setSelected]=useState('');
  const owned=useMemo(()=>new Set(state.inventory.filter(x=>x.quantity>0).map(x=>x.cardId)),[state.inventory]);
  const missing=useMemo(()=>state.cards.filter(c=>!owned.has(c.id)&&c.name.toLowerCase().includes(query.toLowerCase())).slice(0,60),[state.cards,owned,query]);
