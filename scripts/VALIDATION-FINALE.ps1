@@ -12,16 +12,23 @@ try {
     Run-Step 'Tests unitaires' 'test'
     Run-Step 'Build production' 'build'
     Run-Step 'Images locales' 'art:check'
-    $secure = Read-Host 'URI PostgreSQL Session Pooler (saisie masquee)' -AsSecureString
-    $env:DATABASE_URL = (New-Object System.Net.NetworkCredential('', $secure)).Password
+    $existingDatabaseUrl = [Environment]::GetEnvironmentVariable('DATABASE_URL', 'Process')
+    $existingSupabaseUrl = [Environment]::GetEnvironmentVariable('SUPABASE_DB_URL', 'Process')
+    $secure = $null
+    $injectedUrl = $false
+    if (-not $existingDatabaseUrl -and -not $existingSupabaseUrl) {
+        $secure = Read-Host 'URI PostgreSQL Session Pooler (saisie masquee)' -AsSecureString
+        $env:DATABASE_URL = (New-Object System.Net.NetworkCredential('', $secure)).Password
+        $injectedUrl = $true
+    }
     try {
         Run-Step 'Lecture Supabase' 'db:check:runtime'
         Run-Step 'Illustrations du catalogue Supabase complet' 'db:check:artwork'
         Run-Step 'Ecritures Supabase et rollback' 'db:test:writes'
     }
     finally {
-        Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue
-        $secure.Dispose()
+        if ($injectedUrl) { Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue }
+        if ($null -ne $secure) { $secure.Dispose() }
     }
     Write-Host "`nValidation locale terminee sans erreur. Tester encore Discord, GitHub assets et Vercel en preproduction." -ForegroundColor Green
 }
