@@ -13,7 +13,8 @@ export async function GET(request: Request): Promise<Response> {
     return json({error: 'Authentification PostgreSQL non activée.'}, 503);
   }
   try {
-    return json({authenticated: !!(await pgSessionProfile(request)), user: await pgSessionProfile(request)});
+    const user = await pgSessionProfile(request);
+    return json({authenticated: !!user, user});
   } catch {
     return json({error: 'Session temporairement indisponible.'}, 503);
   }
