@@ -1,4 +1,3 @@
-import 'server-only';
 import { randomInt, randomUUID, createHash } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import type { ActionResult, DrawnCard, Rarity } from '../lib/contracts';
