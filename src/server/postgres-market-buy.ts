@@ -1,3 +1,4 @@
+import {awardPgAchievements} from './postgres-achievements';
 import { createHash, randomUUID } from 'node:crypto';
 import { pgTransaction } from './postgres';
 import { ensure } from './errors';
@@ -37,6 +38,10 @@ export async function pgBuyListing(userId:string, listingId:string, key:string):
   await db.query('INSERT INTO acquisitions(id,user_id,card_id,quantity,source,created_at,reference_id) VALUES($1,$2,$3,$4,$5,$6,$7)',[randomUUID(),userId,listing.card_id,listing.quantity,'marché',date,listingId]);
   await db.query("UPDATE listings SET status='sold',buyer_id=$1,completed_at=$2 WHERE id=$3",[userId,date,listingId]);
   await db.query('INSERT INTO price_history(id,listing_id,card_id,unit_price,quantity,sold_at) VALUES($1,$2,$3,$4,$5,$6)',[randomUUID(),listingId,listing.card_id,listing.price,listing.quantity,date]);
+  await db.query('INSERT INTO activities(id,user_id,kind,message,created_at) VALUES($1,$2,$3,$4,$5)',[randomUUID(),userId,'market','Achat de carte au marché.',date]);
+  await db.query('INSERT INTO activities(id,user_id,kind,message,created_at) VALUES($1,$2,$3,$4,$5)',[randomUUID(),listing.seller_id,'market','Vente de carte au marché.',date]);
+  await awardPgAchievements(db,userId);
+  await awardPgAchievements(db,listing.seller_id);
   const result:ActionResult={type:'listing-buy',message:'Achat réussi. Les cartes ont rejoint votre collection.',amount:total,quantity:listing.quantity,entityId:listingId};
   await db.query('INSERT INTO idempotency(user_id,key,action_hash,response,created_at) VALUES($1,$2,$3,$4,$5)',[userId,key,digest,JSON.stringify(result),date]);
   return result;
