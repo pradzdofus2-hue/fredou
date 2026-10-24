@@ -23,7 +23,8 @@ L'audit local `npm run art:check` a été rapporté comme réussi (2467 fichiers
 - Configurer la redirection Discord : `https://DOMAINE/api/auth/discord/callback`. Ajouter cette même URL dans le portail développeur Discord.
 - Garder `PG_AUTH_ENABLED`, `PG_STATE_ENABLED` et `PG_GAME_ACTIONS_ENABLED` à `false` tant que le test d'écriture n'est pas passé et que les actions non migrées ne sont pas traitées. Les basculer ensemble uniquement après audit complet des endpoints.
 - Ne jamais définir `LOCAL_DEV_MODE=true` en production.
-- Vérifier la configuration avec `npm run deploy:check` dans un environnement muni des variables de production, **avant** d'activer les fonctionnalités.
+- Vérifier la configuration avec `npm run deploy:check` dans un environnement muni des variables de production, **avant** d'activer les fonctionnalités. Le contrôle rejette les URLs non HTTPS, les chemins de redirection Discord incohérents, les connexions PostgreSQL locales et les identifiants incomplets. Il n'imprime pas les secrets.
+- Un échec de ce contrôle n'active rien : garder les fonctionnalités PostgreSQL fermées jusqu'au succès du test d'écritures sur une base de préproduction.
 - Tester le flux Discord, l'état connecté, les boosters, le marché, les échanges, les images et les liens de navigation sur l'URL de préproduction.
 
 ## Blocages connus
@@ -31,5 +32,6 @@ L'audit local `npm run art:check` a été rapporté comme réussi (2467 fichiers
 2. Vérification de toutes les illustrations du catalogue Supabase et de leur livraison depuis le site public encore nécessaire.
 3. Certaines actions API sont encore explicitement indisponibles en mode PostgreSQL.
 4. Playwright local/CI validé, mais aucune validation E2E complète sur le déploiement Vercel.
+5. La connexion Vercel actuellement disponible n'a pas accès au projet `fredouu` (projet introuvable, lecture des déploiements interdite) : confirmer l'équipe propriétaire et les autorisations Vercel avant de demander un déploiement.
 
 **Ne pas considérer le projet prêt pour un lancement public tant que ces points restent ouverts.**
