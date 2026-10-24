@@ -7,7 +7,6 @@ import { openPgBooster } from '../src/server/postgres-boosters';
 import { buyPgBooster } from '../src/server/postgres-booster-purchases';
 import { pgListingAction } from '../src/server/postgres-listings';
 import { pgBuyListing } from '../src/server/postgres-market-buy';
-import { pgTradeAction } from '../src/server/postgres-trades';
 import { pgState } from '../src/server/postgres-state';
 
 async function main() {
@@ -34,13 +33,6 @@ async function main() {
    assert.equal(paid.amount,10);
    const owned=await pgRead<{n:number}>('SELECT quantity n FROM inventory WHERE user_id=$1 AND card_id=$2',[two.id,selected]);
    assert.equal(owned[0]?.n,1);
-   // Seed one equal-value card on each test player to exercise real trade rules.
-   const cards=await pgRead<{id:string;recycle_value:number}>('SELECT id,recycle_value FROM cards ORDER BY id LIMIT 2');
-   assert.equal(cards.length,2);
-   const dt=new Date().toISOString();
-   for(const [uid,card] of [[one.id,cards[0].id],[two.id,cards[0].id]] as const){
-    await pgRead('INSERT INTO inventory(user_id,card_id,quantity,favorite,first_obtained_at,last_obtained_at) VALUES($1,$2,1,0,$3,$3) ON CONFLICT(user_id,card_id) DO UPDATE SET quantity=inventory.quantity+1',[uid,card,dt]);
-   }
    const state=await pgState(one.id);
    assert.equal(state.currentUser?.id,one.id);
    assert.ok(state.openings.length>0);
