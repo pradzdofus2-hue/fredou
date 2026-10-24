@@ -32,7 +32,7 @@ export async function pgState(userId:string|null):Promise<StateResponse>{
   const series=await q<StateResponse['series'][number]>('SELECT id,name,description,color FROM series ORDER BY id LIMIT 500');
   const total=cards.length;
   const userStats=await q<{user_id:string;unique_cards:number;points:string;mythic:string}>(
-   'SELECT i.user_id,COUNT(*)::integer AS unique_cards,COALESCE(SUM(c.collection_points),0)::text AS points,COALESCE(SUM(CASE WHEN c.rarity=5 THEN i.quantity ELSE 0 END),0)::text AS mythic FROM inventory i JOIN cards c ON c.id=i.card_id WHERE i.quantity>0 GROUP BY i.user_id');
+   'SELECT i.user_id,COUNT(*)::integer AS unique_cards,COALESCE(SUM(c.collection_points),0)::text AS points,COALESCE(SUM(CASE WHEN c.rarity=5 THEN i.quantity ELSE 0 END),0)::text AS mythic FROM inventory i JOIN cards c ON c.id=i.card_id WHERE i.quantity>0 AND NOT(c.id=ANY($1::text[])) GROUP BY i.user_id',[Array.from(HIDDEN_DUPLICATE_CARD_IDS)]);
   const stats=new Map(userStats.map(x=>[x.user_id,x]));
   const achievementsCount=await q<{user_id:string;n:number}>('SELECT user_id,COUNT(*)::integer n FROM user_achievements GROUP BY user_id');
   const achMap=new Map(achievementsCount.map(x=>[x.user_id,x.n]));
