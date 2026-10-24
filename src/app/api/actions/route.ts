@@ -1,3 +1,4 @@
+import { pgListingAction } from '@/server/postgres-listings';
 import { cookieValue, SESSION_COOKIE } from '@/server/auth';
 import { getPgSessionUser, revokePgSession } from '@/server/postgres-auth';
 import { pgState } from '@/server/postgres-state';
@@ -26,11 +27,12 @@ export async function POST(request: Request) {
         response.headers.append('Set-Cookie','fredou_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'+(process.env.APP_URL?.startsWith('https:')?'; Secure':''));
         return response;
       }
-      const supported=pgAction.type==='open'||pgAction.type==='buy-booster'||pgAction.type==='favorite'||pgAction.type==='preferences';
+      const supported=pgAction.type==='open'||pgAction.type==='buy-booster'||pgAction.type==='favorite'||pgAction.type==='preferences'||pgAction.type==='listing-create'||pgAction.type==='listing-cancel';
       if (!supported) throw new HttpError('UNAVAILABLE','Cette fonction est en cours de migration PostgreSQL.',503);
       if (process.env.PG_GAME_ACTIONS_ENABLED !== 'true') return json({error:'Actions PostgreSQL non activées.'},503);
       const result=pgAction.type==='open' ? await openPgBooster(pgUser,pgAction.boosterId,key)
         : pgAction.type==='buy-booster' ? await buyPgBooster(pgUser,pgAction.boosterId,pgAction.quantity,key)
+        : (pgAction.type==='listing-create'||pgAction.type==='listing-cancel') ? await pgListingAction(pgUser,pgAction,key)
         : await executePgSimpleAction(pgUser,pgAction,key);
       return json({state:await pgState(pgUser),result} satisfies ActionResponse);
     }
