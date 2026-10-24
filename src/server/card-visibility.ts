@@ -50,6 +50,7 @@ export const HIDDEN_DUPLICATE_CARD_IDS = [
   "monster-2924",
   "monster-2967",
   "monster-2968",
+  "monster-2986", // Kolosso = Kolossos (card-62)
   "monster-3384",
   "monster-3391",
   "monster-3393",
