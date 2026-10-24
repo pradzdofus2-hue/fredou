@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import type {StateResponse} from '../src/lib/contracts';
 
-export async function smokePreview(baseUrl:string,fetcher:typeof fetch=fetch):Promise<{cards:number;images:number}>{
+export async function smokePreview(baseUrl:string,fetcher:typeof fetch=fetch,checkAllImages=false):Promise<{cards:number;images:number}>{
  const base=new URL(baseUrl);
  assert.equal(base.protocol,'https:','PREVIEW_URL doit être HTTPS');
  assert.equal(base.username,'');assert.equal(base.password,'');
@@ -26,18 +26,22 @@ export async function smokePreview(baseUrl:string,fetcher:typeof fetch=fetch):Pr
  assert.equal(state.boosters.length,5,'Les cinq boosters doivent être disponibles');
  const unique=[...new Set(state.cards.map(card=>card.image).filter(Boolean))];
  assert.ok(unique.length>0,'Illustrations manquantes dans le catalogue');
- const selected=[unique[0],unique[Math.floor(unique.length/4)],unique[Math.floor(unique.length/2)],unique[Math.floor(unique.length*3/4)],unique[unique.length-1]];
- for(const image of new Set(selected)){
-  assert.ok(/^\/art\/[A-Za-z0-9_./-]+$/.test(image)&&!image.split('/').includes('..'),'Chemin d’image incorrect');
-  const file=await retrieve(image);
-  assert.ok((file.headers.get('content-type')||'').startsWith('image/'),'Image non servie comme image : '+image);
-  await file.body?.cancel();
+ const selected=checkAllImages?unique:[unique[0],unique[Math.floor(unique.length/4)],unique[Math.floor(unique.length/2)],unique[Math.floor(unique.length*3/4)],unique[unique.length-1]];
+ const paths=[...new Set(selected)];
+ // Limit concurrent requests so an exhaustive check does not overload the preview.
+ for(let offset=0;offset<paths.length;offset+=8){
+  await Promise.all(paths.slice(offset,offset+8).map(async image=>{
+   assert.ok(/^\/art\/[A-Za-z0-9_./-]+$/.test(image)&&!image.split('/').includes('..'),'Chemin d’image incorrect');
+   const file=await retrieve(image);
+   assert.ok((file.headers.get('content-type')||'').startsWith('image/'),'Image non servie comme image : '+image);
+   await file.body?.cancel();
+  }));
  }
  return {cards:state.cards.length,images:new Set(selected).size};
 }
 if(process.argv[1]?.replaceAll('\\','/').endsWith('/check-preview.ts')){
  const url=process.env.PREVIEW_URL;
  if(!url){console.error('PREVIEW_URL manquante (exemple : https://preview.example.com/)');process.exitCode=1;}
- else smokePreview(url).then(x=>console.log('PREVIEW OK : '+x.cards+' cartes ; '+x.images+' images vérifiées (échantillon).'))
+ else smokePreview(url,fetch,process.env.PREVIEW_CHECK_ALL_IMAGES==='true').then(x=>console.log('PREVIEW OK : '+x.cards+' cartes ; '+x.images+' images vérifiées'+(process.env.PREVIEW_CHECK_ALL_IMAGES==='true'?' (catalogue complet).':' (échantillon).')))
   .catch(e=>{console.error('PREVIEW BLOQUÉE : '+(e instanceof Error?e.message:String(e)));process.exitCode=1;});
 }
