@@ -93,8 +93,19 @@ export async function finishDiscordLogin(request: Request): Promise<Response> {
   const username=(profile.global_name||profile.username).slice(0,40);
   const db=getDb();
   const existing=db.prepare('SELECT id FROM users WHERE discord_id = ?').get(profile.id) as {id:string}|undefined;
-  const userId=existing?.id || createUser({username,avatar,discordId:profile.id,mode:'discord',role:'player'});
-  if (existing) db.prepare('UPDATE users SET username = ?, avatar = ? WHERE id = ?').run(username,avatar,userId);
+  // Link the currently signed-in local demo account instead of silently losing its collection.
+  // Never merge with an already-linked Discord account automatically.
+  const currentId=sessionUser(request);
+  const current=currentId?db.prepare('SELECT id,discord_id,mode FROM users WHERE id=?').get(currentId) as {id:string;discord_id:string|null;mode:string}|undefined:undefined;
+  if (existing && current && existing.id!==current.id && current.mode==='development') {
+    throw new HttpError('CONFLICT','Ce Discord est déjà lié à un autre profil FREDOU. Déconnectez-vous du compte local pour utiliser le profil Discord existant.',409);
+  }
+  if (current?.discord_id && current.discord_id!==profile.id) {
+    throw new HttpError('CONFLICT','Ce profil FREDOU est déjà associé à un autre compte Discord.',409);
+  }
+  const userId=existing?.id || (current?.mode==='development' ? current.id : createUser({username,avatar,discordId:profile.id,mode:'discord',role:'player'}));
+  db.prepare('UPDATE users SET username=?,avatar=?,discord_id=?,mode=? WHERE id=?')
+    .run(username,avatar,profile.id,'discord',userId);
   const response=new Response(null,{status:302,headers:{Location:appOrigin()+'/','Cache-Control':'no-store'}});
   attachSession(response,userId,request);
   response.headers.append('Set-Cookie',cookie(STATE_COOKIE,'',0));
