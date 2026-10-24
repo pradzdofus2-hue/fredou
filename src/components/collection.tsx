@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { ArrowRight, BookOpen, Diamond, Heart, Layers3, Recycle, Search, SlidersHorizontal, Sparkles } from 'lucide-react';
 import type { Card } from '@/lib/contracts';
 import { useGame, formatDate } from './game-context';
@@ -107,13 +107,27 @@ export function CollectionPage({ catalogue = false, seriesId = '' }: { catalogue
   </div>;
 }
 
+function AlbumRewards(){
+ const {state,notify}=useGame();
+ const [claims,setClaims]=useState<{series_id:string;milestone:number}[]>([]);
+ const [busy,setBusy]=useState(false);
+ useEffect(()=>{if(!state.currentUser)return;let ok=true;fetch('/api/collection-studio').then(r=>r.ok?r.json():null).then(data=>{if(ok&&data?.albumClaims)setClaims(data.albumClaims);}).catch(()=>{});return()=>{ok=false;};},[state.currentUser?.id]);
+ if(!state.currentUser)return null;
+ const owned=new Set(state.inventory.filter(i=>i.quantity>0).map(i=>i.cardId));
+ return <section className="fc-studio-panel"><h2>✦ Récompenses d'albums</h2><p>Débloque des fragments à 25 %, 50 %, 75 % et 100 % de chaque album. Chaque palier ne peut être obtenu qu'une fois.</p>{state.series.map(series=>{
+ const cards=state.cards.filter(c=>c.seriesId===series.id),percent=cards.filter(c=>owned.has(c.id)).length/Math.max(1,cards.length)*100;
+ return <div key={series.id} className="fc-album-reward-row"><strong>{series.name} · {Math.round(percent)} %</strong><div>{[25,50,75,100].map((m,i)=>{const claimed=claims.some(c=>c.series_id===series.id&&c.milestone===m);return <button key={m} disabled={busy||claimed||percent<m} onClick={async()=>{
+  setBusy(true);try{const r=await fetch('/api/collection-studio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'album',seriesId:series.id,milestone:m})});const data=await r.json();if(!r.ok)throw Error(data.error?.message||'Impossible de récupérer ce palier');setClaims(data.albumClaims);notify('Récompense d’album récupérée !');}catch(e){notify(e instanceof Error?e.message:'Erreur');}finally{setBusy(false);}
+ }}>{claimed?'✓ ':''}{m}% · {[200,500,1000,2000][i]} fragments</button>;})}</div></div>;
+ })}</section>;
+}
 export function AlbumsPage() {
   const { state } = useGame();
   const owned = new Set(state.inventory.map(item => item.cardId));
   return <div className="fc-albums-page">
     <header className="fc-albums-header"><span className="fc-section-kicker">ALBUMS · TROIS UNIVERS À RÉUNIR</span><h1>Les albums</h1><p>Explorez chaque monde et retrouvez les cartes qui vous manquent.</p></header>
     <div className="fc-albums-toolbar"><span>{state.series.length} albums · {state.cards.length} cartes</span><CollectionViewSwitch albums /></div>
-    <div className="fc-album-grid">{state.series.map((series, index) => {
+    <AlbumRewards /><div className="fc-album-grid">{state.series.map((series, index) => {
       const cards = state.cards.filter(card => card.seriesId === series.id);
       const discovered = cards.filter(card => owned.has(card.id)).length;
       const portraits = [cards[0], cards[Math.floor(cards.length / 2)], cards[cards.length - 1]].filter(Boolean);
