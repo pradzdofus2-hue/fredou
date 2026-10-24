@@ -1,4 +1,3 @@
-import 'server-only';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { pgTransaction, pgRead } from './postgres';
 import type { PoolClient } from 'pg';
