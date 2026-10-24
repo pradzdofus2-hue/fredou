@@ -61,4 +61,5 @@ export const DOFUS_IMAGES: Record<string, string> = {
   'card-51': '/art/dofus/51.png', // Mamansot, gfxId 778
   'card-53': '/art/dofus/53.png', // Kaniglou, gfxId 768
   'card-70': '/art/dofus/70.png', // Comte Harebourg, gfxId 993
+  'card-71': '/art/dofus/71.png', // Dofus des Glaces, iconId 23005
 };
