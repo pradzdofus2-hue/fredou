@@ -79,7 +79,12 @@ def main():
     finally:
         source.close()
         if snapshot:
-            snapshot.cleanup()
+            # Windows can retain handles briefly after a failed connection.
+            # Cleanup must never hide the original PostgreSQL error.
+            try:
+                snapshot.cleanup()
+            except PermissionError:
+                print("Avertissement : copie SQLite temporaire verrouillee par Windows ; suppression differee.")
 
 if __name__ == "__main__":
     main()
