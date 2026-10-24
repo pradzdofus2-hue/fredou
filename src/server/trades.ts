@@ -10,16 +10,17 @@ function validateItems(userId:string,items:TradeItem[]):number {
   ensure(new Set(items.map(i=>i.cardId)).size===items.length,'VALIDATION_ERROR','Une carte ne peut apparaître qu’une fois par côté de l’échange.');
   let value=0,total=0;
   for(const item of items) {
+    ensure(Number.isSafeInteger(item.quantity)&&item.quantity>=1,'VALIDATION_ERROR','Quantité de cartes invalide.',422);
     total+=item.quantity;
     const record=one<{quantity:number;recycle_value:number}>('SELECT i.quantity,c.recycle_value FROM inventory i JOIN cards c ON c.id=i.card_id WHERE user_id=? AND card_id=?',userId,item.cardId);
     ensure(record&&record.quantity>=item.quantity,'CONFLICT','Une des cartes de l’échange n’est plus disponible en quantité suffisante.',409);
     value+=record.recycle_value*item.quantity;
   }
-  ensure(total<=GAME_CONFIG.maxTradeQuantity,'VALIDATION_ERROR',`Un échange est limité à ${GAME_CONFIG.maxTradeQuantity} exemplaires de chaque côté.`);
+  ensure(Number.isSafeInteger(total)&&total<=GAME_CONFIG.maxTradeQuantity,'VALIDATION_ERROR',`Un échange est limité à ${GAME_CONFIG.maxTradeQuantity} exemplaires de chaque côté.`);
   return value;
 }
 function validateFairness(offered:number,requested:number):void {
-  ensure(Math.max(offered,requested)/Math.min(offered,requested)<=GAME_CONFIG.maxTradeValueRatio,'CONFLICT',`L’écart de valeur de recyclage dépasse le ratio autorisé (${GAME_CONFIG.maxTradeValueRatio}:1).`,409);
+  ensure(Number.isFinite(offered)&&Number.isFinite(requested)&&offered>0&&requested>0&&Math.max(offered,requested)/Math.min(offered,requested)<=GAME_CONFIG.maxTradeValueRatio,'CONFLICT',`L’écart de valeur de recyclage dépasse le ratio autorisé (${GAME_CONFIG.maxTradeValueRatio}:1).`,409);
 }
 export function createTrade(userId:string,recipientId:string,offered:TradeItem[],requested:TradeItem[]):ActionResult {
   ensure(userId!==recipientId,'VALIDATION_ERROR','Un échange nécessite deux joueurs différents.');
