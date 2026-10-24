@@ -1,3 +1,4 @@
+import { deletePgAccount } from '../src/server/postgres-account-delete';
 /** True PostgreSQL integration test. Every write is rolled back, even on failure. */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -86,11 +87,25 @@ async function main() {
    assert.equal(referral.type,'referral');
    const linked=await pgRead<{referred_by:string}>('SELECT referred_by FROM users WHERE id=$1',[one.id]);
    assert.equal(linked[0].referred_by,two.id);
+   // Referral payouts occur only after three openings and are never duplicated.
+   const payoutsBefore=await pgRead<{n:number}>('SELECT COUNT(*)::integer n FROM referral_rewards WHERE referred_id=$1',[one.id]);
+   assert.equal(payoutsBefore[0].n,0);
+   await openPgBooster(one.id,'free',randomUUID());
+   await openPgBooster(one.id,'free',randomUUID());
+   const payouts=await pgRead<{n:number}>('SELECT COUNT(*)::integer n FROM referral_rewards WHERE referred_id=$1',[one.id]);
+   assert.equal(payouts[0].n,1);
+   const gifts=await pgRead<{user_id:string;amount:number}>('SELECT user_id,amount FROM ledger WHERE reference_id=$1 AND reason=$2',[one.id,'Parrainage confirmé']);
+   assert.equal(gifts.length,2);
+   assert.ok(gifts.every(x=>x.amount===100));
    // Admin-only event actions must not be available to a regular player.
    await assert.rejects(pgSaveEvent(one.id,{type:'event-save',name:'Test',description:'Test',startsAt:new Date().toISOString(),endsAt:new Date(Date.now()+86400000).toISOString(),active:false,color:'#000000',reward:0},randomUUID()));
    const state=await pgState(one.id);
    assert.equal(state.currentUser?.id,one.id);
    assert.ok(state.openings.length>0);
+   const removed=await deletePgAccount(two.id,'PG Test 2');
+   assert.equal(removed.type,'account-delete');
+   const vanished=await pgRead<{id:string}>('SELECT id FROM users WHERE id=$1',[two.id]);
+   assert.equal(vanished.length,0);
    console.log('PG WRITE OK : comptes, ouverture/rejeu, achat booster, marché, échange, inventaire, état joueur.');
   });
   } catch (error) { testError=error; }
