@@ -20,6 +20,11 @@ async function main() {
    testIds.push(one.id,two.id);
    assert.equal(one.balance,300);
    assert.equal((await findOrCreateDiscordPlayer({discordId:one.discord_id!,username:'PG Test 1',avatar:null})).id,one.id);
+   // A fresh user must have exactly one welcome ledger entry and all five reserves.
+   const welcome=await pgRead<{n:number}>('SELECT COUNT(*)::integer n FROM ledger WHERE user_id=$1',[one.id]);
+   assert.equal(welcome[0].n,1);
+   const reserves=await pgRead<{n:number}>('SELECT COUNT(*)::integer n FROM user_boosters WHERE user_id=$1',[one.id]);
+   assert.equal(reserves[0].n,5);
    const key=randomUUID();
    const opening=await openPgBooster(one.id,'free',key);
    assert.equal(opening.opening?.cards.length,5);
@@ -28,11 +33,18 @@ async function main() {
    assert.equal(inv[0].n,5);
    const purchase=await buyPgBooster(one.id,'premium',1,randomUUID());
    assert.equal(purchase.amount,120);
+   const purchaseReplayKey=randomUUID();
+   const bought=await buyPgBooster(one.id,'premium',1,purchaseReplayKey);
+   assert.deepEqual(await buyPgBooster(one.id,'premium',1,purchaseReplayKey),bought);
+   const spent=await pgRead<{balance:number}>('SELECT balance FROM users WHERE id=$1',[one.id]);
+   assert.equal(spent[0].balance,300+5-240);
    const selected=opening.opening!.cards[0].cardId;
    const listing=await pgListingAction(one.id,{type:'listing-create',cardId:selected,quantity:1,price:10},randomUUID());
    assert.ok(listing.entityId);
    const paid=await pgBuyListing(two.id,listing.entityId!,randomUUID());
    assert.equal(paid.amount,10);
+   const sold=await pgRead<{n:number}>('SELECT COUNT(*)::integer n FROM price_history WHERE listing_id=$1',[listing.entityId]);
+   assert.equal(sold[0].n,1);
    const owned=await pgRead<{n:number}>('SELECT quantity n FROM inventory WHERE user_id=$1 AND card_id=$2',[two.id,selected]);
    assert.equal(owned[0]?.n,1);
    // Two distinct cards with the same recycle value make a fair direct exchange.
@@ -48,6 +60,8 @@ async function main() {
    assert.ok(trade.entityId);
    const accepted=await pgTradeAction(two.id,{type:'trade-respond',tradeId:trade.entityId!,decision:'accept'},randomUUID());
    assert.equal(accepted.type,'trade-respond');
+   const acceptedAgain=await pgRead<{status:string}>('SELECT status FROM trades WHERE id=$1',[trade.entityId]);
+   assert.equal(acceptedAgain[0].status,'accepted');
    const traded=await pgRead<{user_id:string;card_id:string;quantity:number}>(
     'SELECT user_id,card_id,quantity FROM inventory WHERE (user_id=$1 AND card_id=$3) OR (user_id=$2 AND card_id=$4)',
     [one.id,two.id,swap[1].id,swap[0].id]);
