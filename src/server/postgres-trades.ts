@@ -1,3 +1,4 @@
+import {awardPgAchievements} from './postgres-achievements';
 import {createHash,randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import type {Action,ActionResult,TradeItem} from '../lib/contracts';
@@ -72,6 +73,8 @@ export async function pgTradeAction(userId:string,action:TradeAction,key:string)
     fairness(await validate(db,trade.sender_id,offered),await validate(db,trade.recipient_id,requested));
     await move(db,trade.sender_id,trade.recipient_id,offered,trade.id,date);
     await move(db,trade.recipient_id,trade.sender_id,requested,trade.id,date);
+    await awardPgAchievements(db,trade.sender_id);
+    await awardPgAchievements(db,trade.recipient_id);
    }
    const status=action.decision==='accept'?'accepted':action.decision==='reject'?'rejected':'cancelled';
    await db.query('UPDATE trades SET status=$1,resolved_at=$2 WHERE id=$3',[status,date,trade.id]);
