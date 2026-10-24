@@ -16,7 +16,7 @@ if(wrongFlags.length) errors.push('Modes PostgreSQL non activés : '+wrongFlags.
 if(!secureOrigin) errors.push('APP_URL doit être une URL publique HTTPS.');
 if(process.env.LOCAL_DEV_MODE==='true') errors.push('LOCAL_DEV_MODE doit être désactivé en production.');
 if(process.env.DISCORD_REDIRECT_URI) {
-  if(!secureOrigin || process.env.DISCORD_REDIRECT_URI!==appUrl.replace(/\\/$/,'')+'/api/auth/discord/callback') {
+  if(!secureOrigin || process.env.DISCORD_REDIRECT_URI!==new URL('/api/auth/discord/callback',appUrl).toString()) {
     errors.push('DISCORD_REDIRECT_URI ne correspond pas à APP_URL + /api/auth/discord/callback.');
   }
 }
