@@ -129,9 +129,18 @@ function OpeningExperience({ booster, opening, replay, close, again }: Encounter
     if (!name) return;
     try {
       flipAudio.current?.pause();
-      const audio = new Audio('/sounds/' + name + '.ogg');
-      audio.volume = 0.65;
+      const audio = new Audio('/sounds/' + name + '.wav');
+      audio.volume = 0.85;
       flipAudio.current = audio;
+      // Keep existing audio working until the original WAV assets are uploaded.
+      const fallback = () => {
+        if (flipAudio.current !== audio) return;
+        const old = new Audio('/sounds/' + name + '.ogg');
+        old.volume = 0.65;
+        flipAudio.current = old;
+        void old.play().catch(() => {});
+      };
+      audio.addEventListener('error', fallback, { once: true });
       void audio.play().catch(() => {});
     } catch { /* Sound is optional and never blocks the reveal. */ }
   }, [animation.flipping, stage]);
