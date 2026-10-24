@@ -160,3 +160,15 @@
 .fc-brand-logo{display:block;width:186px;height:auto;max-height:57px;object-fit:contain}
 @media(max-width:860px){.fc-brand-logo{width:160px;max-height:52px}}
 @media(max-width:560px){.fc-header-inner .fc-brand-logo{width:49px;height:47px;object-fit:cover;object-position:left;max-height:47px}}
+
+/* Correction logo Krosmoria */
+.fc-shell-header .fc-brand {
+  overflow: visible;
+}
+
+.fc-shell-header .fc-brand img {
+  display: block;
+  max-width: 220px;
+  height: auto;
+  object-fit: contain;
+}
