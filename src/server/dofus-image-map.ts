@@ -52,6 +52,7 @@ export const DOFUS_IMAGES: Record<string, string> = {
   'card-9': '/art/dofus/9.png', // Bouftou, gfxId 3
   'card-10': '/art/dofus/10.png', // Prespic, gfxId 7
   'card-23': '/art/dofus/23.png', // Joris Jurgen, gfxId 1374
+  'card-24': '/art/dofus/24.png', // Ogrest
   'card-27': '/art/dofus/27.png', // Berger Porkass, gfxId 192
   'card-28': '/art/dofus/28.png', // Scarafeuille Bleu, gfxId 105
   'card-29': '/art/dofus/29.png', // Scarafeuille Rouge, gfxId 104
