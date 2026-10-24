@@ -13,14 +13,10 @@ Write-Host "Attention : import dans Supabase des cartes/series/boosters seulemen
 $answer = Read-Host "Confirmer l'import du catalogue dans le projet fredou ? (OUI)"
 if ($answer -cne "OUI") { Write-Host "Operation annulee."; exit 0 }
 
-# Install the Python driver without relying on stderr handling in Windows PowerShell 5.1.
-Write-Host "Verification du pilote PostgreSQL..." -ForegroundColor Cyan
-python -m pip show psycopg *> $null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Installation de psycopg..." -ForegroundColor Cyan
-    python -m pip install "psycopg[binary]"
-    if ($LASTEXITCODE -ne 0) { throw "Installation de psycopg echouee" }
-}
+# pip install is idempotent and does not emit a failing 'package not found' warning.
+Write-Host "Installation / verification du pilote PostgreSQL..." -ForegroundColor Cyan
+python -m pip install "psycopg[binary]"
+if ($LASTEXITCODE -ne 0) { throw "Installation de psycopg echouee" }
 
 # Use temporary process-only environment. Never save URL in a file or commit.
 $secret = Read-Host "Supabase > Connect > URI PostgreSQL (saisie masquee)" -AsSecureString
