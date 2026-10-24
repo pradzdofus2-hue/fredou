@@ -1,3 +1,4 @@
+import {awardPgAchievements} from './postgres-achievements';
 import { awardPgReferral } from './postgres-referral-reward';
 import { randomInt, randomUUID, createHash } from 'node:crypto';
 import type { PoolClient } from 'pg';
@@ -119,6 +120,7 @@ export async function openPgBooster(userId:string,boosterId:string,key:string):P
       [openingId,userId,boosterId,date,JSON.stringify(cards),reward,pity?1:0]);
     await balance(client,userId,reward,'Ouverture : '+booster.name,openingId);
     await awardPgReferral(client,userId);
+    await awardPgAchievements(client,userId);
     await client.query('INSERT INTO activities(id,user_id,kind,message,created_at) VALUES($1,$2,$3,$4,$5)',
       [randomUUID(),userId,'opening',booster.name+' : cinq cartes découvertes.',date]);
     const result:ActionResult={type:'open',message:'Vos cinq cartes ont rejoint votre collection.',opening,amount:reward};
