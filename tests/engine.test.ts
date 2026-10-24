@@ -13,7 +13,8 @@ const run = (userId: string, action: Parameters<typeof engine.executeAction>[1],
 after(()=>{database.getDb().close();for(const suffix of ['','-wal','-shm'])rmSync(testDatabasePath+suffix,{force:true});});
 test('catalogue coherent and real persistent inventory', () => {
   const state = engine.getState('fredou');
-  assert.equal(state.cards.length, 72);
+  // Two of the 72 original cards are deliberately hidden as catalogue aliases.
+  assert.equal(state.cards.length, 70);
   assert.equal(state.series.length, 3);
   assert.ok(state.inventory.length > 10);
   assert.ok(state.currentUser!.balance > 0);
