@@ -94,6 +94,14 @@ async function main() {
     [two.id,swap[1].id,date]);
    const trade=await pgTradeAction(one.id,{type:'trade-create',recipientId:two.id,offered:[{cardId:swap[0].id,quantity:1}],requested:[{cardId:swap[1].id,quantity:1}]},randomUUID());
    assert.ok(trade.entityId);
+   // A pending proposal may contain stale or damaged JSON; always revalidate at acceptance.
+   for(const quantity of [0,-1,1.5]){
+    await pgRead('UPDATE trades SET offered=$1 WHERE id=$2',[JSON.stringify([{cardId:swap[0].id,quantity}]),trade.entityId]);
+    await assert.rejects(pgTradeAction(two.id,{type:'trade-respond',tradeId:trade.entityId!,decision:'accept'},randomUUID()));
+    const pending=await pgRead<{status:string}>('SELECT status FROM trades WHERE id=$1',[trade.entityId]);
+    assert.equal(pending[0].status,'pending','Invalid quantities must not resolve or transfer a trade');
+   }
+   await pgRead('UPDATE trades SET offered=$1 WHERE id=$2',[JSON.stringify([{cardId:swap[0].id,quantity:1}]),trade.entityId]);
    const accepted=await pgTradeAction(two.id,{type:'trade-respond',tradeId:trade.entityId!,decision:'accept'},randomUUID());
    assert.equal(accepted.type,'trade-respond');
    const acceptedAgain=await pgRead<{status:string}>('SELECT status FROM trades WHERE id=$1',[trade.entityId]);
