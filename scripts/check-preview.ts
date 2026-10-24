@@ -17,11 +17,14 @@ export async function smokePreview(baseUrl:string,fetcher:typeof fetch=fetch,che
  const response=await retrieve('/api/state');
  assert.ok((response.headers.get('content-type')||'').includes('application/json'),'État JSON requis');
  const state=await response.json() as StateResponse;
+ assert.equal(state.mode,'discord','La préproduction doit utiliser le mode Discord, pas la démonstration locale');
+ assert.equal(state.discordConfigured,true,'Discord OAuth doit être configuré sur la préproduction');
  assert.equal(state.currentUser,null,'Le visiteur sans session ne doit pas être connecté');
  assert.equal(state.ledger.length,0,'Le visiteur ne doit pas recevoir de journal privé');
  assert.equal(state.inventory.length,0,'Le visiteur ne doit pas recevoir un inventaire privé');
  assert.equal(state.openings.length,0,'Le visiteur ne doit pas recevoir des ouvertures privées');
  assert.equal(state.acquisitions.length,0,'Le visiteur ne doit pas recevoir des acquisitions privées');
+ assert.ok((state.activities||[]).every(activity=>!['shop','referral','recycle'].includes(activity.kind)),'Le visiteur ne doit pas voir les activités privées');
  assert.ok(state.cards.length>=100,'Catalogue incomplet sur la préproduction');
  assert.equal(state.boosters.length,5,'Les cinq boosters doivent être disponibles');
  const unique=[...new Set(state.cards.map(card=>card.image).filter(Boolean))];
