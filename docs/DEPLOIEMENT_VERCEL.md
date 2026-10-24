@@ -25,6 +25,7 @@ L'audit local `npm run art:check` a été rapporté comme réussi (2467 fichiers
 - Ne jamais définir `LOCAL_DEV_MODE=true` en production.
 - Vérifier la configuration avec `npm run deploy:check` dans un environnement muni des variables de production, **avant** d'activer les fonctionnalités. Le contrôle rejette les URLs non HTTPS, les chemins de redirection Discord incohérents, les connexions PostgreSQL locales et les identifiants incomplets. Il n'imprime pas les secrets.
 - Un échec de ce contrôle n'active rien : garder les fonctionnalités PostgreSQL fermées jusqu'au succès du test d'écritures sur une base de préproduction.
+- Dès qu'une préproduction HTTPS est disponible, lancer `PREVIEW_URL=https://domaine-preview.example npm run preview:check` (PowerShell : `$env:PREVIEW_URL='https://domaine-preview.example'; npm run preview:check`). Cette commande **sans écriture** vérifie la page d'accueil, le catalogue invité, l'absence d'inventaire/ledger privé, les cinq boosters et un échantillon réparti de cinq illustrations HTTP. Elle ne remplace pas un audit des 2 467 fichiers ni les tests de connexion.
 - Tester le flux Discord, l'état connecté, les boosters, le marché, les échanges, les images et les liens de navigation sur l'URL de préproduction.
 
 ## Blocages connus
