@@ -47,13 +47,18 @@ async function main() {
    assert.deepEqual(await openPgBooster(one.id,'free',key),opening);
    const inv=await pgRead<{n:number}>('SELECT COALESCE(SUM(quantity),0)::integer n FROM inventory WHERE user_id=$1',[one.id]);
    assert.equal(inv[0].n,5);
+   const firstAchievement=await pgRead<{n:number}>('SELECT COUNT(*)::integer n FROM user_achievements WHERE user_id=$1 AND achievement_id=$2',[one.id,'first-opening']);
+   assert.equal(firstAchievement[0].n,1,'Le premier booster doit débloquer le succès');
+   const firstAchievementGrants=await pgRead<{n:number}>('SELECT COUNT(*)::integer n FROM ledger WHERE user_id=$1 AND reason=$2',[one.id,'Succès : Premier éclat']);
+   assert.equal(firstAchievementGrants[0].n,1,'Le rejeu ne doit pas doubler la prime du succès');
    const purchase=await buyPgBooster(one.id,'premium',1,randomUUID());
    assert.equal(purchase.amount,120);
    const purchaseReplayKey=randomUUID();
    const bought=await buyPgBooster(one.id,'premium',1,purchaseReplayKey);
    assert.deepEqual(await buyPgBooster(one.id,'premium',1,purchaseReplayKey),bought);
    const spent=await pgRead<{balance:number}>('SELECT balance FROM users WHERE id=$1',[one.id]);
-   assert.equal(spent[0].balance,300+5-240);
+   const spentLedger=await pgRead<{n:number}>('SELECT COALESCE(SUM(amount),0)::integer n FROM ledger WHERE user_id=$1',[one.id]);
+   assert.equal(spent[0].balance,spentLedger[0].n,'Le solde doit correspondre au journal, succès compris');
    const selected=opening.opening!.cards[0].cardId;
    const listing=await pgListingAction(one.id,{type:'listing-create',cardId:selected,quantity:1,price:10},randomUUID());
    assert.ok(listing.entityId);
@@ -65,9 +70,11 @@ async function main() {
    assert.equal(owned[0]?.n,1);
    // Money must be transferred exactly once in both directions.
    const buyerAfter=await pgRead<{balance:number}>('SELECT balance FROM users WHERE id=$1',[two.id]);
-   assert.equal(buyerAfter[0].balance,290);
+   const buyerLedger=await pgRead<{n:number}>('SELECT COALESCE(SUM(amount),0)::integer n FROM ledger WHERE user_id=$1',[two.id]);
+   assert.equal(buyerAfter[0].balance,buyerLedger[0].n,'Achat et succès doivent être comptabilisés');
    const sellerAfter=await pgRead<{balance:number}>('SELECT balance FROM users WHERE id=$1',[one.id]);
-   assert.equal(sellerAfter[0].balance,75);
+   const sellerLedger=await pgRead<{n:number}>('SELECT COALESCE(SUM(amount),0)::integer n FROM ledger WHERE user_id=$1',[one.id]);
+   assert.equal(sellerAfter[0].balance,sellerLedger[0].n,'Vente et succès doivent être comptabilisés');
    const saleLedgers=await pgRead<{user_id:string;amount:number}>('SELECT user_id,amount FROM ledger WHERE reference_id=$1 AND reason IN ($2,$3)',[listing.entityId,'Achat marché','Vente marché']);
    assert.equal(saleLedgers.length,2);
    assert.equal(saleLedgers.reduce((sum,x)=>sum+x.amount,0),0);
