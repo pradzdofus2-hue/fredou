@@ -4,7 +4,7 @@
 Le workflow `.github/workflows/ci.yml` vérifie TypeScript, les tests unitaires et concurrents, le build de production, les parcours Playwright dans Chrome et la présence des illustrations sur GitHub. Les exécutions #73 et #74 du commit c3a20e7 ont réussi (24 octobre 2026). Consulter l'onglet **Actions** de GitHub ; ne pas confondre « workflow créé » et « workflow réussi ».
 
 ## Validation fonctionnelle avant activation (une seule session)
-Sous Windows : une fois tous les changements récupérés, lancer `powershell -ExecutionPolicy Bypass -File .\\scripts\\VALIDATION-FINALE.ps1`. Cette commande regroupe typecheck, tests, build, contrôle des images et tests PostgreSQL avec une seule saisie masquée de l'URI.
+Sous Windows : une fois tous les changements récupérés, lancer `powershell -ExecutionPolicy Bypass -File .\\scripts\\VALIDATION-FINALE.ps1`. Si `DATABASE_URL` ou `SUPABASE_DB_URL` existe déjà dans la session PowerShell, le script la réutilise sans l'effacer ; sinon il demande l'URI de manière masquée et nettoie seulement la variable temporaire qu'il a créée. Cette commande regroupe typecheck, tests, build, contrôle des images et tests PostgreSQL avec une seule saisie masquée de l'URI.
 Sur le poste local, lancer `npm run db:check:runtime`, `npm run db:check:artwork` et `npm run db:test:writes` avec **la même** variable privée `DATABASE_URL` issue du Session Pooler Supabase. Ne jamais coller l'URI dans GitHub ou dans un journal partagé. Les tests d'écriture utilisent une transaction annulée à la fin, mais nécessitent encore une validation d'exécution réussie.
 
 ## Contrôle PostgreSQL GitHub dédié (manuel)
