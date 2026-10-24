@@ -48,4 +48,17 @@ export const DOFUS_IMAGES: Record<string, string> = {
   'card-67': '/art/dofus/67.png',
   'card-68': '/art/dofus/68.png',
   'card-69': '/art/dofus/69.png',
+  'card-4': '/art/dofus/4.png', // Tofu, gfxId 9
+  'card-9': '/art/dofus/9.png', // Bouftou, gfxId 3
+  'card-10': '/art/dofus/10.png', // Prespic, gfxId 7
+  'card-23': '/art/dofus/23.png', // Joris Jurgen, gfxId 1374
+  'card-27': '/art/dofus/27.png', // Berger Porkass, gfxId 192
+  'card-28': '/art/dofus/28.png', // Scarafeuille Bleu, gfxId 105
+  'card-29': '/art/dofus/29.png', // Scarafeuille Rouge, gfxId 104
+  'card-30': '/art/dofus/30.png', // Scarafeuille Vert, gfxId 135
+  'card-35': '/art/dofus/35.png', // Gelée Royale Bleuet, gfxId 20
+  'card-36': '/art/dofus/36.png', // Gelée Royale Fraise, gfxId 39
+  'card-51': '/art/dofus/51.png', // Mamansot, gfxId 778
+  'card-53': '/art/dofus/53.png', // Kaniglou, gfxId 768
+  'card-70': '/art/dofus/70.png', // Comte Harebourg, gfxId 993
 };
