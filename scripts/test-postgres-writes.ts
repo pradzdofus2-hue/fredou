@@ -162,7 +162,7 @@ async function main() {
    const visibleIds=new Set(state.cards.map(c=>c.id));
    assert.ok(state.inventory.every(i=>visibleIds.has(i.cardId)),'Inventaire PostgreSQL visible seulement pour les cartes du catalogue');
    const openingProgress=state.achievements.find(a=>a.id==='first-opening');
-   assert.equal(openingProgress?.unlockedAt!==null,true,'Le premier succès doit apparaître débloqué dans l’interface');
+   assert.ok(openingProgress?.unlockedAt,'Le premier succès doit apparaître débloqué dans l’interface');
    const legendaryProgress=state.achievements.find(a=>a.id==='first-legendary');
    assert.ok((legendaryProgress?.progress??0)>=0,'Statistiques de succès accessibles dans l’état');
    assert.ok(state.openings.length>0);
