@@ -4,6 +4,7 @@
 Le workflow `.github/workflows/ci.yml` lance `npm ci`, `npm run typecheck`, `npm test`, `npm run build` après chaque push. Consulter l'onglet **Actions** de GitHub ; ne pas confondre « workflow créé » et « workflow réussi ».
 
 ## Validation fonctionnelle avant activation (une seule session)
+Sous Windows : une fois tous les changements récupérés, lancer `powershell -ExecutionPolicy Bypass -File .\\scripts\\VALIDATION-FINALE.ps1`. Cette commande regroupe typecheck, tests, build, contrôle des images et tests PostgreSQL avec une seule saisie masquée de l'URI.
 Sur le poste local, lancer `npm run db:check:runtime` et `npm run db:test:writes` avec **la même** variable privée `DATABASE_URL` issue du Session Pooler Supabase. Ne jamais coller l'URI dans GitHub ou dans un journal partagé. Les tests d'écriture utilisent une transaction annulée à la fin, mais nécessitent encore une validation d'exécution réussie.
 
 ## Assets
