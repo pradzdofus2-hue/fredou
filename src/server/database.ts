@@ -8,6 +8,12 @@ import { CARDS, SERIES } from './catalog';
 const globalDatabase = globalThis as typeof globalThis & { fredouDatabases?: Map<string, DatabaseSync> };
 const connections = globalDatabase.fredouDatabases ??= new Map<string, DatabaseSync>();
 export function getDb(): DatabaseSync {
+  // Fail closed in serverless production: a local SQLite file is ephemeral on
+  // Vercel, and a silently recreated database would lose player progress.
+  // Remove this guard only once all runtime SQL routes use persistent Postgres.
+  if (process.env.VERCEL === '1') {
+    throw new Error('FREDOU_DATABASE_MIGRATION_REQUIRED: PostgreSQL backend not active. SQLite serverless writes are disabled.');
+  }
   // The database is runtime data, never a server bundle dependency.
   const path = resolve(/* turbopackIgnore: true */ process.env.DATABASE_PATH || process.env.DB_PATH || 'data/fredou.sqlite');
   let connection = connections.get(path);
