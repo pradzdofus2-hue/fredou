@@ -50,7 +50,6 @@ test('real booster opening reveals five server-awarded cards and persists on rel
   await premium.getByRole('button',{name:'Ouvrir le booster',exact:true}).click();
   const dialog=page.getByRole('dialog');
   await expect(dialog).toBeVisible();
-  if(await dialog.getByRole('button',{name:'Déchirer le booster'}).count()) await dialog.getByRole('button',{name:'Déchirer le booster'}).click({force:true});
   // Reduced motion intentionally skips the card-flipping animation and opens the summary.
   await expect(dialog.locator('.fc-opening-reward')).toContainText('Collection mise à jour');
   const afterOpening=await state(page);
