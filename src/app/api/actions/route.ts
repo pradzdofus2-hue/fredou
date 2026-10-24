@@ -1,3 +1,9 @@
+import { cookieValue, SESSION_COOKIE } from '@/server/auth';
+import { getPgSessionUser, revokePgSession } from '@/server/postgres-auth';
+import { pgState } from '@/server/postgres-state';
+import { openPgBooster } from '@/server/postgres-boosters';
+import { buyPgBooster } from '@/server/postgres-booster-purchases';
+import { executePgSimpleAction } from '@/server/postgres-simple-actions';
 import { authReplay, clearSession, performAuthAction, sessionUser } from '@/server/auth';
 import { executeAction, getState, parseAction } from '@/server/engine';
 import { errorResponse, HttpError, json, rateLimit, readJsonBody, validateIdempotencyKey, validateOrigin } from '@/server/http';
@@ -7,6 +13,27 @@ export async function POST(request: Request) {
   try {
     validateOrigin(request);
     const key=validateIdempotencyKey(request.headers.get('Idempotency-Key'));
+    if (process.env.PG_AUTH_ENABLED === 'true') {
+      if (process.env.PG_STATE_ENABLED !== 'true') return json({error:'Moteur PostgreSQL inactif.'},503);
+      const token=cookieValue(request,SESSION_COOKIE);
+      const pgUser=await getPgSessionUser(token);
+      rateLimit(pgUser || 'anonymous-pg');
+      const pgAction=parseAction(await readJsonBody(request));
+      if (!pgUser) throw new HttpError('AUTH_REQUIRED','Connectez-vous avec Discord.',401);
+      if (pgAction.type === 'logout') {
+        await revokePgSession(token);
+        const response=json({state:await pgState(null),result:{type:'logout',message:'Vous êtes déconnecté.'}} satisfies ActionResponse);
+        response.headers.append('Set-Cookie','fredou_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'+(process.env.APP_URL?.startsWith('https:')?'; Secure':''));
+        return response;
+      }
+      const supported=pgAction.type==='open'||pgAction.type==='buy-booster'||pgAction.type==='favorite'||pgAction.type==='preferences';
+      if (!supported) throw new HttpError('UNAVAILABLE','Cette fonction est en cours de migration PostgreSQL.',503);
+      if (process.env.PG_GAME_ACTIONS_ENABLED !== 'true') return json({error:'Actions PostgreSQL non activées.'},503);
+      const result=pgAction.type==='open' ? await openPgBooster(pgUser,pgAction.boosterId,key)
+        : pgAction.type==='buy-booster' ? await buyPgBooster(pgUser,pgAction.boosterId,pgAction.quantity,key)
+        : await executePgSimpleAction(pgUser,pgAction,key);
+      return json({state:await pgState(pgUser),result} satisfies ActionResponse);
+    }
     const userId=sessionUser(request);
     rateLimit(userId || 'anonymous-local');
     const action=parseAction(await readJsonBody(request));
