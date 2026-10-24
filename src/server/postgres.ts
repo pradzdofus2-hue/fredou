@@ -6,7 +6,10 @@
  * Requires DATABASE_URL and the 'pg' dependency; call from server-only code.
  */
 import 'server-only';
-// The migration module is not imported into the live runtime yet.\n// Install pg and @types/pg and update package-lock before activating it.\n// @ts-ignore -- optional migration dependency until PostgreSQL cutover\nimport { Pool, type PoolClient, type QueryResultRow } from 'pg';
+// The migration module is not imported into the live runtime yet.
+// Install pg and @types/pg and update package-lock before activating it.
+// @ts-ignore -- optional migration dependency until PostgreSQL cutover
+import { Pool, type PoolClient, type QueryResultRow } from 'pg';
 
 const globalPools = globalThis as typeof globalThis & { fredouPostgresPool?: Pool };
 
