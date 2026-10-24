@@ -73,6 +73,9 @@ export async function pgTradeAction(userId:string,action:TradeAction,key:string)
     fairness(await validate(db,trade.sender_id,offered),await validate(db,trade.recipient_id,requested));
     await move(db,trade.sender_id,trade.recipient_id,offered,trade.id,date);
     await move(db,trade.recipient_id,trade.sender_id,requested,trade.id,date);
+    // Both sides need a durable record of the completed transfer.
+    await db.query('INSERT INTO activities(id,user_id,kind,message,created_at) VALUES($1,$2,$3,$4,$5)',[randomUUID(),trade.sender_id,'trade','Échange accepté : les cartes ont été transférées.',date]);
+    await db.query('INSERT INTO activities(id,user_id,kind,message,created_at) VALUES($1,$2,$3,$4,$5)',[randomUUID(),trade.recipient_id,'trade','Échange accepté : les cartes ont été transférées.',date]);
     await awardPgAchievements(db,trade.sender_id);
     await awardPgAchievements(db,trade.recipient_id);
    }
