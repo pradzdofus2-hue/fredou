@@ -32,3 +32,19 @@ test('preview smoke blocks incomplete or private guest state',async()=>{
 test('preview smoke rejects insecure targets without network access',async()=>{
  await assert.rejects(smokePreview('http://example.com/',mockFetcher()),/HTTPS/);
 });
+
+test('full preview audit checks every unique image rather than five samples',async()=>{
+ let visited=0;
+ const base=mockFetcher();
+ const countImages=(async(input:RequestInfo|URL,init?:RequestInit)=>{
+  if(new URL(String(input)).pathname.startsWith('/art/'))visited++;
+  return base(input,init);
+ }) as typeof fetch;
+ const result=await smokePreview('https://example.com/',countImages,true);
+ assert.equal(result.images,120);
+ assert.equal(visited,120);
+});
+test('full preview audit detects a missing middle image outside the five samples',async()=>{
+ const absent='/art/dofus/20.png';
+ await assert.rejects(smokePreview('https://example.com/',mockFetcher(absent),true),/HTTP 404/);
+});
