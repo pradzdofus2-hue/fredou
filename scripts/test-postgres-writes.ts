@@ -98,6 +98,9 @@ async function main() {
    assert.equal(accepted.type,'trade-respond');
    const acceptedAgain=await pgRead<{status:string}>('SELECT status FROM trades WHERE id=$1',[trade.entityId]);
    assert.equal(acceptedAgain[0].status,'accepted');
+   const transferHistory=await pgRead<{user_id:string;n:number}>("SELECT user_id,COUNT(*)::integer n FROM activities WHERE user_id=ANY($1::text[]) AND kind='trade' AND message=$2 GROUP BY user_id",[[one.id,two.id],'Échange accepté : les cartes ont été transférées.']);
+   assert.equal(transferHistory.length,2,'Les deux joueurs doivent voir le transfert dans leur historique');
+   assert.ok(transferHistory.every(x=>x.n===1),'Aucun transfert ne doit être journalisé plusieurs fois');
    const traded=await pgRead<{user_id:string;card_id:string;quantity:number}>(
     'SELECT user_id,card_id,quantity FROM inventory WHERE (user_id=$1 AND card_id=$3) OR (user_id=$2 AND card_id=$4)',
     [one.id,two.id,swap[1].id,swap[0].id]);
