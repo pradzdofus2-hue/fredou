@@ -13,8 +13,10 @@ import { pgTradeAction } from '../src/server/postgres-trades';
 async function main() {
  if (!process.env.DATABASE_URL && !process.env.SUPABASE_DB_URL) throw Error('URI PostgreSQL requise.');
  const testIds:string[]=[];
+ let testError:unknown;
  try {
-  await pgRollbackTest(async()=>{
+  try {
+   await pgRollbackTest(async()=>{
    const one=await findOrCreateDiscordPlayer({discordId:'991'+String(Date.now()).padStart(20,'0'),username:'PG Test 1',avatar:null});
    const two=await findOrCreateDiscordPlayer({discordId:'992'+String(Date.now()).padStart(20,'0'),username:'PG Test 2',avatar:null});
    testIds.push(one.id,two.id);
@@ -74,9 +76,21 @@ async function main() {
    assert.ok(state.openings.length>0);
    console.log('PG WRITE OK : comptes, ouverture/rejeu, achat booster, marché, échange, inventaire, état joueur.');
   });
+  } catch (error) { testError=error; }
   const remaining=await pgRead<{id:string}>('SELECT id FROM users WHERE id=ANY($1::text[])',[testIds]);
   assert.equal(remaining.length,0,'Rollback incomplet : comptes temporaires présents');
-  console.log('ROLLBACK OK : aucun compte de test conservé.');
+  if (testIds.length) {
+   const dependencies=await pgRead<{table_name:string;n:number}>(`SELECT 'inventory' table_name,COUNT(*)::integer n FROM inventory WHERE user_id=ANY($1::text[])
+     UNION ALL SELECT 'ledger',COUNT(*)::integer FROM ledger WHERE user_id=ANY($1::text[])
+     UNION ALL SELECT 'openings',COUNT(*)::integer FROM openings WHERE user_id=ANY($1::text[])
+     UNION ALL SELECT 'listings',COUNT(*)::integer FROM listings WHERE seller_id=ANY($1::text[]) OR buyer_id=ANY($1::text[])
+     UNION ALL SELECT 'trades',COUNT(*)::integer FROM trades WHERE sender_id=ANY($1::text[]) OR recipient_id=ANY($1::text[])
+     UNION ALL SELECT 'idempotency',COUNT(*)::integer FROM idempotency WHERE user_id=ANY($1::text[])
+     UNION ALL SELECT 'acquisitions',COUNT(*)::integer FROM acquisitions WHERE user_id=ANY($1::text[])`,[testIds]);
+   assert.ok(dependencies.every(x=>x.n===0),'Rollback incomplet : lignes de jeu temporaires conservées');
+  }
+  console.log('ROLLBACK OK : aucun compte, inventaire, achat, annonce ni échange de test conservé.');
+  if(testError) throw testError;
  } finally {await pgPool().end();}
 }
 main().catch(err=>{console.error('PG WRITE KO : '+(err instanceof Error?err.message:String(err)));process.exitCode=1;});
