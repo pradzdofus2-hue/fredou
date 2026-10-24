@@ -1,7 +1,7 @@
 # FREDOU — Checklist de livraison Vercel
 
 ## Qualité automatique
-Le workflow `.github/workflows/ci.yml` vérifie TypeScript, les tests unitaires et concurrents, le build de production, les parcours Playwright dans Chrome et la présence des illustrations sur GitHub. Les exécutions #73 et #74 du commit c3a20e7 ont réussi (24 octobre 2026). Consulter l'onglet **Actions** de GitHub ; ne pas confondre « workflow créé » et « workflow réussi ».
+Le workflow `.github/workflows/ci.yml` vérifie TypeScript, les tests unitaires et concurrents, le build de production, les parcours Playwright dans Chrome, les illustrations sur GitHub **et une véritable instance PostgreSQL 17 éphémère** qui exécute les scénarios d'écriture, rollback, idempotence et connexions concurrentes. Les exécutions #73 et #74 du commit c3a20e7 ont réussi (24 octobre 2026). Consulter l'onglet **Actions** de GitHub ; ne pas confondre « workflow créé » et « workflow réussi ».
 
 ## Validation fonctionnelle avant activation (une seule session)
 Sous Windows : une fois tous les changements récupérés, lancer `powershell -ExecutionPolicy Bypass -File .\\scripts\\VALIDATION-FINALE.ps1`. Si `DATABASE_URL` ou `SUPABASE_DB_URL` existe déjà dans la session PowerShell, le script la réutilise sans l'effacer ; sinon il demande l'URI de manière masquée et nettoie seulement la variable temporaire qu'il a créée. Cette commande regroupe typecheck, tests, build, contrôle des images et tests PostgreSQL avec une seule saisie masquée de l'URI.
@@ -29,9 +29,9 @@ L'audit local `npm run art:check` a été rapporté comme réussi (2467 fichiers
 - Tester le flux Discord, l'état connecté, les boosters, le marché, les échanges, les images et les liens de navigation sur l'URL de préproduction.
 
 ## Blocages connus
-1. Aucun résultat confirmé de `db:test:writes` sur une base PostgreSQL réelle. Déclencher manuellement le workflow de validation dédié.
+1. Le scénario complet d'écriture PostgreSQL avec rollback est **vert sur une base PostgreSQL 17 éphémère dans GitHub Actions** (#190 et #191). La connexion et les transactions sur l'instance Supabase de destination n'ont pas encore été vérifiées : lancer `db:check:runtime`, `db:check:artwork` et `db:test:writes` avec la configuration de cette instance avant publication.
 2. Vérification de toutes les illustrations du catalogue Supabase et de leur livraison depuis le site public encore nécessaire.
-3. Certaines actions API sont encore explicitement indisponibles en mode PostgreSQL.
+3. Le routage principal des actions PostgreSQL est implémenté, mais l'authentification Discord réelle et le parcours navigateur avec PostgreSQL activé n'ont pas été validés sur Vercel.
 4. Playwright local/CI validé, mais aucune validation E2E complète sur le déploiement Vercel.
 5. La connexion Vercel actuellement disponible n'a pas accès au projet `fredouu` (projet introuvable, lecture des déploiements interdite) : confirmer l'équipe propriétaire et les autorisations Vercel avant de demander un déploiement.
 
